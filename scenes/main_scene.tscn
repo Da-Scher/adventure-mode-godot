@@ -1023,6 +1023,12 @@ transform = Transform3D(0.36125, 0, -0.932469, 0, 1, 0, 0.932469, 0, 0.36125, -2
 character = ExtResource("34_b3pdd")
 to_equip_wep = ExtResource("28_6apcs")
 
+[node name="footall_sfx3" type="Node" parent="skele_04"]
+script = ExtResource("27_6v26p")
+
+[node name="ai_attack" type="Node" parent="skele_04"]
+script = ExtResource("28_5kths")
+
 [node name="skele_02" parent="." instance=ExtResource("26_5srmb")]
 transform = Transform3D(-0.258819, 0, 0.965926, 0, 1, 0, -0.965926, 0, -0.258819, 52.2022, 0.207531, -3.26289)
 character = ExtResource("34_b3pdd")
