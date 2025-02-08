@@ -17,6 +17,12 @@ var state = ATT_STATE.IDLE
 
 var start_pos
 
+# Boolean flag for patrolling
+var is_patrolling : bool = false  
+# Patrol destinations for skeletons
+var skele_01_patrol_destination = Vector3(46.5, -0.6, 24.8)
+var skele_02_patrol_destination = Vector3(21.415, 0, -12.466)
+var skele_04_patrol_destination = Vector3(-12.554, 0.075, -22.434)
 @export var action = false
 var dist
 
@@ -51,6 +57,27 @@ func _process(delta):
 				break
 		return # find player, just come back next frame with a valid player instance	
 	dist = thrall.global_position.distance_to(player.global_position)
+	# Handle patrol logic of skeleton 01
+	if thrall.name == "skele_01" and dist > dist_see and not (dist <= dist_attack or dist <= dist_see):
+		is_patrolling = true
+		patrolDestination(skele_01_patrol_destination)
+		return
+	elif thrall.name == "skele_01" and (dist <= dist_attack or dist <= dist_see):
+		is_patrolling == false
+	# Handle patrol logic of skeleton 02
+	if thrall.name == "skele_02" and dist > dist_see and not (dist <= dist_attack or dist <= dist_see):
+		is_patrolling = true
+		patrolDestination(skele_02_patrol_destination)
+		return
+	elif thrall.name == "skele_02" and (dist <= dist_attack or dist <= dist_see):
+		is_patrolling == false		
+	# Handle patrol logic of skeleton 04
+	if thrall.name == "skele_04" and dist > dist_see and not (dist <= dist_attack or dist <= dist_see):
+		is_patrolling = true
+		patrolDestination(skele_04_patrol_destination)
+		return
+	elif thrall.name == "skele_04" and (dist <= dist_attack or dist <= dist_see):
+		is_patrolling == false				
 	if dist <= dist_attack:
 		in_attack_range(delta)
 	elif dist <= dist_see:
@@ -66,6 +93,34 @@ func _process(delta):
 	var go_dir = goTo - thrall.global_position
 	thrall.handle_movement(go_dir)
 
+# Patrol function that takes destination as input
+# Will walk to destination and return to starting position on loop
+func patrolDestination(destination : Vector3):
+	# If within distance of a player, stop patrolling
+	if dist <= dist_see:
+		is_patrolling = false
+		return
+	# Set patrol destination to specified location if it's at its initial state
+	if goTo == Vector3.ZERO:
+		goTo = destination
+	# Set the direction vector,
+	# Use normalized to set magnitude to 1
+	var direction = (goTo - thrall.global_position).normalized()
+	# Set move speed, using 0.5 for slower walking
+	var speed = 0.5
+	# Set the velocity
+	var velocity = direction * speed
+	# Tranform global coordinates to local coordinates
+	var localVelocity = thrall.global_basis.inverse() * velocity
+	# Turn the thrall around towards its direction and handle the movement
+	thrall.desired_turn = -localVelocity.x
+	thrall.handle_movement(velocity)
+	# If destination is reached, return to starting position
+	if thrall.global_position.distance_to(goTo) < 0.5:  
+		if goTo == destination:  
+			goTo = start_pos
+		else:  
+			goTo = destination
 
 func patrol(delta):
 	timer -= delta
