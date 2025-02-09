@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://ccnrn1fac75vh"]
+
+[node name="Inv_UI_Slot" type="Panel"]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(16, 16)
+offset_left = 2.0
+offset_right = 1925.0
+offset_bottom = 1080.0
+
+[node name="ColorRect" type="ColorRect" parent="."]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 64.0
+color = Color(0.27451, 0.0392157, 1, 1)
