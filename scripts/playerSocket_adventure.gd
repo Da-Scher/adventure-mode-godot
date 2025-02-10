@@ -110,7 +110,7 @@ func attempt_to_broadcast_client_actions_to_clients(packet: Dictionary):
 	print("Attempting to send to all clients: " + str(packet))
 	rpc("client_action", packet)
 
-@rpc("unreliable")
+@rpc("unreliable", "any_peer")
 func recieve_action_message(packet: Dictionary):
 	print("Recieved message: " + str(packet))
 	var t1 = packet["TIME"]
