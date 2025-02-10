@@ -90,31 +90,42 @@ func create_action_pack(action: String):
 	# id, time, action. Separated by semi-colons.
 	var id = multiplayer.get_unique_id()
 	var t1 = Time.get_unix_time_from_system()
-	var packet = {"PEER": id, "TIME": t1, "ACTION": action}
 	# if thrall controlled by host player, then the packet data go to other players.
 	if multiplayer.is_server():
-		for pid in multiplayer.get_peers():
-			if pid != multiplayer.get_unique_id():
-				print("Server-to-client message " + str(packet) + "; " + str(pid))
-				packet_send(packet, pid)
-			else:
-				print("skip me")
+		var packet = {"PEER": id, "TIME1": t1, "TIME2": t1, "ACTION": action}
+		attempt_to_broadcast_client_actions_to_clients(packet)
 	# otherwise, send data to server.
 	else:
-		print("client sending message")
-		print("Client-to-server message " + str(packet) + "; 1")
-		packet_send(packet, 1)
+		var packet = {"PEER": id, "TIME": t1, "ACTION": action}
+		send_action_packet_to_server(packet)
 
 @rpc("unreliable")
 func client_action(packet: Dictionary):
-	print("recieved data: ")
-	print(packet)
+	print("Actor Packet: server-to-client message " + str(packet))
 	pass
+
+# Packets that account for the time it took to reach the server.
+@rpc("unreliable", "any_peer")
+func attempt_to_broadcast_client_actions_to_clients(packet: Dictionary):
+	print("Attempting to send to all clients: " + str(packet))
+	rpc("client_action", packet)
+
+@rpc("unreliable")
+func recieve_action_message(packet: Dictionary):
+	print("Recieved message: " + str(packet))
+	var t1 = packet["TIME"]
+	var t2 = Time.get_unix_time_from_system()
+	var id = packet["PEER"]
+	var act = packet["ACTION"]
+	var bounce_packet = {"PEER": id, "TIME1": t1, "TIME2": t2, "ACTION": act}
+	print("Created bounce packet: " + str(bounce_packet))
+	attempt_to_broadcast_client_actions_to_clients(bounce_packet)
+
 #rpc are from client -> server -> client
 @rpc("unreliable")
-func packet_send(packet: Dictionary, peer_id : int):
-	print("packet send: " + str(packet) + "; " + str(peer_id))
-	rpc_id(peer_id, "client_action", packet)
+func send_action_packet_to_server(packet: Dictionary):
+	print("Actor Packet: client-to-server message " + str(packet) + "; 1")
+	rpc_id(1, "recieve_action_message", packet)
 
 func _collect_inputs(delta):
 	# pass 
