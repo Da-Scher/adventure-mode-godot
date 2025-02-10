@@ -58,24 +58,7 @@ func _start_local_only():
 	print("Iz noed? " + str(new_player.find_child("DresserUpper")))
 	outfit_control.dress_up_controller = new_player.find_child("DresserUpper")
 
-@rpc("any_peer")
-func get_ping(peer_id):
-	# if we are the server, wait for packet
-	if multiplayer.is_server():
-		print("starting ping check")
-		get_ping.rpc(peer_id)
-	# if we are a client, send the packet
-	else:
-		print("we gotta ping check")
-		var t1 = Time.get_unix_time_from_system
-		var sender_id = multiplayer.get_remote_sender_id()
-		print_ping.rpc(sender_id, {"Time": t1})
 
-@rpc("any_peer")
-func print_ping(msg):
-	print("Ping: " + str(Time.get_unix_time_from_system - msg["Time"]))
-		
-	
 
 func add_player(peer_id):
 	var new_player = PLAYER_SCENE.instantiate()
@@ -94,5 +77,4 @@ func add_player(peer_id):
 		outfit_control.dress_up_controller = new_player.find_child("DresserUpper")
 	else:
 		print("interloper")
-		get_ping(peer_id)
 		

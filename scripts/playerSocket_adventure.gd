@@ -84,15 +84,48 @@ func _physics_process(delta: float) -> void:
 		return
 	_collect_inputs(delta)
 
+func create_action_pack(action: String):
+	# Todo, consider a safety check for acceptable actions
+	# custom_packet:
+	# id, time, action. Separated by semi-colons.
+	var id = multiplayer.get_unique_id()
+	var t1 = Time.get_unix_time_from_system()
+	var packet = {"PEER": id, "TIME": t1, "ACTION": action}
+	# if thrall controlled by host player, then the packet data go to other players.
+	if multiplayer.is_server():
+		for pid in multiplayer.get_peers():
+			if pid != multiplayer.get_unique_id():
+				print("Server-to-client message " + str(packet) + "; " + str(pid))
+				packet_send(packet, pid)
+			else:
+				print("skip me")
+	# otherwise, send data to server.
+	else:
+		print("client sending message")
+		print("Client-to-server message " + str(packet) + "; 1")
+		packet_send(packet, 1)
+
+@rpc("unreliable")
+func client_action(packet: Dictionary):
+	print("recieved data: ")
+	print(packet)
+	pass
+#rpc are from client -> server -> client
+@rpc("unreliable")
+func packet_send(packet: Dictionary, peer_id : int):
+	print("packet send: " + str(packet) + "; " + str(peer_id))
+	rpc_id(peer_id, "client_action", packet)
 
 func _collect_inputs(delta):
-	pass 
+	# pass 
 	# TODO - Collect player input
 	# 2    - Change to relevant stuff
 	# 3    - Pass forward desired inputs to thrall 
 
-	var input_dir = Input.get_vector(player_prefix + "move_left", player_prefix + "move_right", player_prefix + "move_dn", player_prefix + "move_up")
+	# Every time the function runs, it must have the time an action is performed ready.
+	var t1 = Time.get_unix_time_from_system()
 
+	var input_dir = Input.get_vector(player_prefix + "move_left", player_prefix + "move_right", player_prefix + "move_dn", player_prefix + "move_up")
 	# Figuring out relative movement
 	var mv_z = -mainCam.global_transform.basis.z
 	mv_z.y = 0
@@ -103,20 +136,21 @@ func _collect_inputs(delta):
 	mv_x = mv_x.normalized()
 	mv_x = mv_x * input_dir.x
 	var go_dir = (mv_x + mv_z)
+	
 
 	go_dir.y = Input.get_axis(player_prefix + "crouch", player_prefix + "jump")
 	
 	# SECTION - Dodge and sprinting
 	if Input.is_action_just_released(player_prefix + "dodge"):
 		if ds_timer <= dodge_sprint_threshold:
-			pass
-			#print("dodge!")
+			print(str(multiplayer.get_unique_id()) + " dodge!")
 	if Input.is_action_pressed(player_prefix + "dodge"):
 		ds_timer += delta
 		if ds_timer > dodge_sprint_threshold:
 			thrall.sprint = true
 			#thrall.dodge = true
 	elif Input.is_action_just_released(player_prefix + "dodge") && ds_timer < dodge_sprint_threshold:
+		create_action_pack("dodge")
 		thrall.enque_action("dodge")
 #		thrall.dodge = true
 	else:
@@ -126,6 +160,7 @@ func _collect_inputs(delta):
 
 	
 	if Input.is_action_just_released(player_prefix + "use_item"):
+		create_action_pack("spell")
 		thrall.enque_action("spell")
 	
 	thrall.handle_movement(go_dir)
@@ -136,16 +171,22 @@ func _collect_inputs(delta):
 	else:
 		if Input.get_action_strength("p1_block") > 0.5:
 			if is_instance_valid(thrall.l_wep) && is_instance_valid(thrall.r_wep):
+				create_action_pack("attack_power")
 				thrall.enque_action("attack_power")
 			else:
-				thrall.enque_action("block")	
+				create_action_pack("block")
+				thrall.enque_action("block")
 				if Input.is_action_just_released(player_prefix + "item_right_next"):
-					thrall.enque_action("blocked_attack")	
+					create_action_pack("block")
+					thrall.enque_action("blocked_attack")
 		if Input.get_action_strength("p1_attack_light") > 0.5:
+			create_action_pack("attack_light")
 			thrall.enque_action("attack_light")
 		if Input.get_action_strength("p1_attack_heavy") > 0.5:
+			create_action_pack("attack_heavy")
 			thrall.enque_action("attack_heavy")
 		if Input.get_action_strength("p1_parry") > 0.5:
+			create_action_pack("attack_art")
 			thrall.enque_action("attack_art")
 	
 	dot.global_position = thrall.global_position + go_dir
