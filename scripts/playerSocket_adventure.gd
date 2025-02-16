@@ -92,39 +92,53 @@ func create_action_pack(action: String):
 	var t1 = Time.get_unix_time_from_system()
 	# if thrall controlled by host player, then the packet data go to other players.
 	if multiplayer.is_server():
-		var packet = {"PEER": id, "TIME1": t1, "TIME2": t1, "ACTION": action}
+		var action_data = {"PEER": id, "TIME1": t1, "TIME2": t1, "ACTION": action}
+		var packet = var_to_bytes(action_data)
 		attempt_to_broadcast_client_actions_to_clients(packet)
 	# otherwise, send data to server.
 	else:
-		var packet = {"PEER": id, "TIME": t1, "ACTION": action}
+		var action_data = {"PEER": id, "TIME": t1, "ACTION": action}
+		var packet = var_to_bytes(action_data)
 		send_action_packet_to_server(packet)
 
 @rpc("unreliable")
-func client_action(packet: Dictionary):
-	print("Actor Packet: server-to-client message " + str(packet))
+func client_action(packet: PackedByteArray):
+	var message = bytes_to_var(packet)
+	print("client_action(packet : PackedByteArray) --")
+	print("packet PackedByteArray:     " + str(packet))
+	print("Decoded Message Dictionary: " + str(message))
 	pass
 
 # Packets that account for the time it took to reach the server.
 @rpc("unreliable", "any_peer")
-func attempt_to_broadcast_client_actions_to_clients(packet: Dictionary):
-	print("Attempting to send to all clients: " + str(packet))
+func attempt_to_broadcast_client_actions_to_clients(packet: PackedByteArray):
+	var message = bytes_to_var(packet)
+	print("attempt_to_broadcast_client_actions_to_clients(packet : PackedByteArray): ") 
+	print("packet PackedByteArray: " + str(packet) )
+	print("message Dictionary:     " + str(message))
 	rpc("client_action", packet)
 
 @rpc("unreliable", "any_peer")
-func recieve_action_message(packet: Dictionary):
-	print("Recieved message: " + str(packet))
-	var t1 = packet["TIME"]
+func recieve_action_message(packet: PackedByteArray):
+	var message = bytes_to_var(packet)
+	print("recieve_action_message(packet : PackedByteArray)")
+	print("packet PackedByteArray:        " + str(packet) )
+	print("message Dictionary:            " + str(message))
+	var t1 = message["TIME"]
 	var t2 = Time.get_unix_time_from_system()
-	var id = packet["PEER"]
-	var act = packet["ACTION"]
-	var bounce_packet = {"PEER": id, "TIME1": t1, "TIME2": t2, "ACTION": act}
-	print("Created bounce packet: " + str(bounce_packet))
+	var id = message["PEER"]
+	var act = message["ACTION"]
+	var bounce_message = {"PEER": id, "TIME1": t1, "TIME2": t2, "ACTION": act}
+	var bounce_packet = var_to_bytes(bounce_message)
+	print("bounce_message Dictionary:     " + str(bounce_message))
+	print("bounce_packet PackedByteArray: " + str(bounce_packet) )
 	attempt_to_broadcast_client_actions_to_clients(bounce_packet)
 
 #rpc are from client -> server -> client
 @rpc("unreliable")
-func send_action_packet_to_server(packet: Dictionary):
-	print("Actor Packet: client-to-server message " + str(packet) + "; 1")
+func send_action_packet_to_server(packet: PackedByteArray):
+	print("send_action_packet_to_server") 
+	print("packet PackedByteArray " + str(packet))
 	rpc_id(1, "recieve_action_message", packet)
 
 func _collect_inputs(delta):
