@@ -147,9 +147,6 @@ func _collect_inputs(delta):
 	# 2    - Change to relevant stuff
 	# 3    - Pass forward desired inputs to thrall 
 
-	# Every time the function runs, it must have the time an action is performed ready.
-	var t1 = Time.get_unix_time_from_system()
-
 	var input_dir = Input.get_vector(player_prefix + "move_left", player_prefix + "move_right", player_prefix + "move_dn", player_prefix + "move_up")
 	# Figuring out relative movement
 	var mv_z = -mainCam.global_transform.basis.z
