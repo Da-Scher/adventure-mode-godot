@@ -11,13 +11,18 @@ var nop= WebSocketMultiplayerPeer.new()
 @export var ip_input : LineEdit
 @export var outfit_control : Control
 
+var player_socket : Node
+
 # player-thrall map: one-to-one mapping of player id to a thrall.
 # Operationally, it is an array of dictionaries. Basically treating 
 # this like an array of json entries.
-var pt_map : Array = []
+@export var pt_map := Dictionary()
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	player_socket = get_parent().get_node("Player Sockets/p1_psock_adventure")
+	player_socket.connect("broadcast_action", Callable(self, "attempt_to_broadcast_client_actions_to_clients")
+, 0)
 	pass # Replace with function body.
 
 
@@ -70,9 +75,9 @@ func add_player(peer_id):
 	new_player.name = str(peer_id)
 	add_child(new_player)
 	#var peer_count = multiplayer.get_peers().size()
-	pt_map.append({"PEER": peer_id, "NODE": new_player, "NAME": new_player.name, "POSITION": new_player.position})
+	pt_map[peer_id] = {"NODE": new_player, "NAME": new_player.name, "POSITION": new_player.position}
 	print("New player: " + str(peer_id))
-	print("pt_map[" + str(multiplayer.get_peers().size()) + "] = " + str(pt_map[multiplayer.get_peers().size()]))
+	print("pt_map[" + str(peer_id) + "] = " + str(pt_map[peer_id]))
 	new_player.set_multiplayer_authority(peer_id)
 	if peer_id == multiplayer.get_unique_id():
 		print("We is us!")
@@ -85,4 +90,12 @@ func add_player(peer_id):
 		outfit_control.dress_up_controller = new_player.find_child("DresserUpper")
 	else:
 		print("interloper")
-		
+
+# Packets that account for the time it took to reach the server.
+@rpc("unreliable", "any_peer")
+func attempt_to_broadcast_client_actions_to_clients(packet: PackedByteArray):
+	var message = bytes_to_var(packet)
+	print("attempt_to_broadcast_client_actions_to_clients(packet : PackedByteArray): ") 
+	print("packet PackedByteArray: " + str(packet) )
+	print("message Dictionary:     " + str(message))
+	player_socket.rpc("client_action", packet, pt_map[message["PEER"]])

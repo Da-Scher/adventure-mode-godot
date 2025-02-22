@@ -20,7 +20,7 @@ var primary_thrall = true
 @export var vignette : Control
 @export var title_card : Control
 
-var multiplayer_manager = get_parent()
+
 
 var dot : Node3D # debug
 
@@ -35,6 +35,10 @@ var look_lock = false
 @export var target_locker : PackedScene
 
 @export var headsUpDisplay : Control
+
+var multiplayer_manager : Node
+
+signal broadcast_action(packet : PackedByteArray)
 
 # acreas and interactable things
 
@@ -96,7 +100,7 @@ func create_action_pack(action: String):
 	if multiplayer.is_server():
 		var action_data = {"PEER": id, "TIME1": t1, "TIME2": t1, "ACTION": action}
 		var packet = var_to_bytes(action_data)
-		attempt_to_broadcast_client_actions_to_clients(packet)
+		broadcast_action.emit(packet)
 	# otherwise, send data to server.
 	else:
 		var action_data = {"PEER": id, "TIME": t1, "ACTION": action}
@@ -104,21 +108,16 @@ func create_action_pack(action: String):
 		send_action_packet_to_server(packet)
 
 @rpc("unreliable")
-func client_action(packet: PackedByteArray):
+func client_action(packet: PackedByteArray, pt: Dictionary):
 	var message = bytes_to_var(packet)
 	print("client_action(packet : PackedByteArray) --")
 	print("packet PackedByteArray:     " + str(packet))
 	print("Decoded Message Dictionary: " + str(message))
+	if not pt.is_empty():
+		print("pt entry: " + str(pt))
+	else:
+		print("pt_map entry " + str(message['PEER']) + " does not exist.")
 	pass
-
-# Packets that account for the time it took to reach the server.
-@rpc("unreliable", "any_peer")
-func attempt_to_broadcast_client_actions_to_clients(packet: PackedByteArray):
-	var message = bytes_to_var(packet)
-	print("attempt_to_broadcast_client_actions_to_clients(packet : PackedByteArray): ") 
-	print("packet PackedByteArray: " + str(packet) )
-	print("message Dictionary:     " + str(message))
-	rpc("client_action", packet)
 
 @rpc("unreliable", "any_peer")
 func recieve_action_message(packet: PackedByteArray):
@@ -134,7 +133,7 @@ func recieve_action_message(packet: PackedByteArray):
 	var bounce_packet = var_to_bytes(bounce_message)
 	print("bounce_message Dictionary:     " + str(bounce_message))
 	print("bounce_packet PackedByteArray: " + str(bounce_packet) )
-	attempt_to_broadcast_client_actions_to_clients(bounce_packet)
+	broadcast_action.emit(bounce_packet)
 
 #rpc are from client -> server -> client
 @rpc("unreliable")
