@@ -37,7 +37,6 @@ func _ready():
 		player_socket.connect("signal_attack", Callable(self, "playerAttacking"), 0)
 	else:
 		print("Error connecting to player_socket signal")
-	get_tree().get_nodes_in_group("enemies").append(self)
 	start_pos = thrall.global_position
 	goTo = find_somewhere_to_go()
 	thrall.hand_state = Actor.HandState.TWO_HAND
@@ -119,7 +118,7 @@ func summonHelp():
 	# All enemies within radius
 	var nearbyEnemies = get_tree().get_nodes_in_group("enemies")
 	# Assignable variable to adjust radius
-	var callDistance = 100
+	var callDistance = 50
 	for enemy in nearbyEnemies:
 		if enemy is Actor and enemy != thrall and !enemy.hasCalled:
 			print(enemy.global_position.distance_to(thrall.global_position))
