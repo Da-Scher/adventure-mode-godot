@@ -11,6 +11,11 @@ var nop= WebSocketMultiplayerPeer.new()
 @export var ip_input : LineEdit
 @export var outfit_control : Control
 
+# player-thrall map: one-to-one mapping of player id to a thrall.
+# Operationally, it is an array of dictionaries. Basically treating 
+# this like an array of json entries.
+var pt_map : Array = []
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	pass # Replace with function body.
@@ -64,7 +69,10 @@ func add_player(peer_id):
 	var new_player = PLAYER_SCENE.instantiate()
 	new_player.name = str(peer_id)
 	add_child(new_player)
+	#var peer_count = multiplayer.get_peers().size()
+	pt_map.append({"PEER": peer_id, "NODE": new_player, "NAME": new_player.name, "POSITION": new_player.position})
 	print("New player: " + str(peer_id))
+	print("pt_map[" + str(multiplayer.get_peers().size()) + "] = " + str(pt_map[multiplayer.get_peers().size()]))
 	new_player.set_multiplayer_authority(peer_id)
 	if peer_id == multiplayer.get_unique_id():
 		print("We is us!")

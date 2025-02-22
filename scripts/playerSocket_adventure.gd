@@ -20,6 +20,8 @@ var primary_thrall = true
 @export var vignette : Control
 @export var title_card : Control
 
+var multiplayer_manager = get_parent()
+
 var dot : Node3D # debug
 
 # Input checks for dodge vs sprint
