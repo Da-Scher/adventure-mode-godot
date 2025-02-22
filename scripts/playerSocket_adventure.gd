@@ -20,6 +20,8 @@ var primary_thrall = true
 @export var vignette : Control
 @export var title_card : Control
 
+
+
 var dot : Node3D # debug
 
 # Input checks for dodge vs sprint
@@ -33,6 +35,10 @@ var look_lock = false
 @export var target_locker : PackedScene
 
 @export var headsUpDisplay : Control
+
+var multiplayer_manager : Node
+
+signal broadcast_action(packet : PackedByteArray)
 
 # acreas and interactable things
 
@@ -92,39 +98,48 @@ func create_action_pack(action: String):
 	var t1 = Time.get_unix_time_from_system()
 	# if thrall controlled by host player, then the packet data go to other players.
 	if multiplayer.is_server():
-		var packet = {"PEER": id, "TIME1": t1, "TIME2": t1, "ACTION": action}
-		attempt_to_broadcast_client_actions_to_clients(packet)
+		var action_data = {"PEER": id, "TIME1": t1, "TIME2": t1, "ACTION": action}
+		var packet = var_to_bytes(action_data)
+		broadcast_action.emit(packet)
 	# otherwise, send data to server.
 	else:
-		var packet = {"PEER": id, "TIME": t1, "ACTION": action}
+		var action_data = {"PEER": id, "TIME": t1, "ACTION": action}
+		var packet = var_to_bytes(action_data)
 		send_action_packet_to_server(packet)
 
 @rpc("unreliable")
-func client_action(packet: Dictionary):
-	print("Actor Packet: server-to-client message " + str(packet))
+func client_action(packet: PackedByteArray, pt: Dictionary):
+	var message = bytes_to_var(packet)
+	print("client_action(packet : PackedByteArray) --")
+	print("packet PackedByteArray:     " + str(packet))
+	print("Decoded Message Dictionary: " + str(message))
+	if not pt.is_empty():
+		print("pt entry: " + str(pt))
+	else:
+		print("pt_map entry " + str(message['PEER']) + " does not exist.")
 	pass
 
-# Packets that account for the time it took to reach the server.
 @rpc("unreliable", "any_peer")
-func attempt_to_broadcast_client_actions_to_clients(packet: Dictionary):
-	print("Attempting to send to all clients: " + str(packet))
-	rpc("client_action", packet)
-
-@rpc("unreliable", "any_peer")
-func recieve_action_message(packet: Dictionary):
-	print("Recieved message: " + str(packet))
-	var t1 = packet["TIME"]
+func recieve_action_message(packet: PackedByteArray):
+	var message = bytes_to_var(packet)
+	print("recieve_action_message(packet : PackedByteArray)")
+	print("packet PackedByteArray:        " + str(packet) )
+	print("message Dictionary:            " + str(message))
+	var t1 = message["TIME"]
 	var t2 = Time.get_unix_time_from_system()
-	var id = packet["PEER"]
-	var act = packet["ACTION"]
-	var bounce_packet = {"PEER": id, "TIME1": t1, "TIME2": t2, "ACTION": act}
-	print("Created bounce packet: " + str(bounce_packet))
-	attempt_to_broadcast_client_actions_to_clients(bounce_packet)
+	var id = message["PEER"]
+	var act = message["ACTION"]
+	var bounce_message = {"PEER": id, "TIME1": t1, "TIME2": t2, "ACTION": act}
+	var bounce_packet = var_to_bytes(bounce_message)
+	print("bounce_message Dictionary:     " + str(bounce_message))
+	print("bounce_packet PackedByteArray: " + str(bounce_packet) )
+	broadcast_action.emit(bounce_packet)
 
 #rpc are from client -> server -> client
 @rpc("unreliable")
-func send_action_packet_to_server(packet: Dictionary):
-	print("Actor Packet: client-to-server message " + str(packet) + "; 1")
+func send_action_packet_to_server(packet: PackedByteArray):
+	print("send_action_packet_to_server") 
+	print("packet PackedByteArray " + str(packet))
 	rpc_id(1, "recieve_action_message", packet)
 
 func _collect_inputs(delta):
@@ -132,9 +147,6 @@ func _collect_inputs(delta):
 	# TODO - Collect player input
 	# 2    - Change to relevant stuff
 	# 3    - Pass forward desired inputs to thrall 
-
-	# Every time the function runs, it must have the time an action is performed ready.
-	var t1 = Time.get_unix_time_from_system()
 
 	var input_dir = Input.get_vector(player_prefix + "move_left", player_prefix + "move_right", player_prefix + "move_dn", player_prefix + "move_up")
 	# Figuring out relative movement
