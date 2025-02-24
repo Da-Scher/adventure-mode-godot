@@ -4,19 +4,20 @@ extends Node
 @onready var thrall = get_parent() as Actor
 
 @export var dist_see = 10
-@export var dist_attack = 5
+@export var dist_attack = 10
 
 var goTo : Vector3
-
+# Signal used to determine if player is attacking
+var player_socket : Node
 
 var timer = 0.0
-
+# Flag to determine whether a player is attacking
+var player_attacking = false
 
 enum ATT_STATE {IDLE, RETREATING, ATTACKING, DODGING}
 var state = ATT_STATE.IDLE
 
 var start_pos
-
 # Boolean flag for patrolling
 var is_patrolling : bool = false  
 # Patrol destinations for skeletons
@@ -30,6 +31,12 @@ var dist
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
+	# Define Signal
+	player_socket = get_parent().get_parent().get_node("Player Sockets/p1_psock_adventure")
+	if player_socket != null:
+		player_socket.connect("signal_attack", Callable(self, "playerAttacking"), 0)
+	else:
+		print("Error connecting to player_socket signal")
 	start_pos = thrall.global_position
 	goTo = find_somewhere_to_go()
 	thrall.hand_state = Actor.HandState.TWO_HAND
@@ -44,6 +51,10 @@ func move_fix():
 func _process(delta):
 	#patrol(delta)
 	#return
+	# Testing for summonHelp()
+	if thrall.name == "skele_01" and thrall.character.health_current < 2 and thrall.hasCalled != true:
+		summonHelp()
+		thrall.hasCalled = true
 	if is_instance_valid(thrall) and thrall.alive == false:
 		return
 	timer -= delta
@@ -70,14 +81,14 @@ func _process(delta):
 		patrolDestination(skele_02_patrol_destination)
 		return
 	elif thrall.name == "skele_02" and (dist <= dist_attack or dist <= dist_see):
-		is_patrolling == false		
+		is_patrolling == false
 	# Handle patrol logic of skeleton 04
 	if thrall.name == "skele_04" and dist > dist_see and not (dist <= dist_attack or dist <= dist_see):
 		is_patrolling = true
 		patrolDestination(skele_04_patrol_destination)
 		return
 	elif thrall.name == "skele_04" and (dist <= dist_attack or dist <= dist_see):
-		is_patrolling == false				
+		is_patrolling == false
 	if dist <= dist_attack:
 		in_attack_range(delta)
 	elif dist <= dist_see:
@@ -93,6 +104,34 @@ func _process(delta):
 	var go_dir = goTo - thrall.global_position
 	thrall.handle_movement(go_dir)
 
+# Function used for the signal, sets the 
+# player_attacking flag to true 
+func playerAttacking(action : String):
+	player_attacking = true
+	await get_tree().create_timer(1).timeout
+	player_attacking = false
+	
+
+# Function to allow enemies to summon help when they
+# reach below a certain threshold
+func summonHelp():
+	# All enemies within radius
+	var nearbyEnemies = get_tree().get_nodes_in_group("enemies")
+	# Assignable variable to adjust radius
+	var callDistance = 50
+	for enemy in nearbyEnemies:
+		if enemy is Actor and enemy != thrall and !enemy.hasCalled:
+			print(enemy.global_position.distance_to(thrall.global_position))
+			# For debugging
+			print("Enemy calls for help!")
+			var enemyDistance = enemy.global_position.distance_to(thrall.global_position)
+			if enemyDistance <= callDistance:
+				# Move the enemy towards the player
+				enemy.global_position = player.global_position
+				enemy.handle_movement((player.global_position - enemy.global_position).normalized())
+				enemy.combat_mode = true
+	return
+	
 # Patrol function that takes destination as input
 # Will walk to destination and return to starting position on loop
 func patrolDestination(destination : Vector3):
@@ -185,12 +224,12 @@ func attacking():
 			thrall.enque_action("attack_heavy")
 	goTo = player.global_position
 	if timer <= 0:
-		if randf() < 0.5:
-			state = ATT_STATE.DODGING
-			timer = 4.0
-		else:
+		if randf() < 0.5 && thrall.character.health_current < 2:
 			state = ATT_STATE.RETREATING
 			timer = 3.0
+		else:
+			state = ATT_STATE.DODGING
+			timer = 4.0
 
 func retreating():
 	#print("RETREAT")
@@ -211,19 +250,19 @@ func dodging():
 	thrall.dodge = true
 	goTo = thrall.global_position + thrall.global_basis.x
 	var randAct = randf()
-	if randAct < 0.05:
+	if randAct < 0.5 && player_attacking == true:
 		thrall.enque_action("dodge")
-	if randAct < 0.1:
+		player_attacking == false
+	if randAct < 0.1 && player_attacking == true:
 		goTo = thrall.global_position
 		thrall.enque_action("dodge")
 	if timer <= 0:
-		if randf() < 0.5:
-			state = ATT_STATE.ATTACKING
-			timer = 4.0
-		else:
+		if randf() < 0.5 && thrall.character.health_current < 2:
 			state = ATT_STATE.RETREATING
 			timer = 3.0
-
+		else:
+			state = ATT_STATE.ATTACKING
+			timer = 4.0
 
 
 func create_arrow_mesh() -> ArrayMesh:

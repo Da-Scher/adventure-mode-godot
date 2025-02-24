@@ -4,6 +4,7 @@ class_name Actor
 
 @export var character : Character
 
+var hasCalled = false
 var desired_move = Vector3.ZERO
 var desired_turn = 0.0 # left or right -+ 
 var lock_targ_pos : Vector3 = Vector3.ZERO

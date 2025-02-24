@@ -1067,6 +1067,17 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -126.616, 15.8264, -41.0111)
 _spawnable_scenes = PackedStringArray("res://prefabs/actor.tscn")
 spawn_path = NodePath("../Multplayer Manager")
 
+[node name="skele_05" parent="." instance=ExtResource("26_5srmb")]
+transform = Transform3D(1.51671, 0, -0.950622, 0, 1.79, 0, 0.950622, 0, 1.51671, 18.6112, -4.11882, -51.8413)
+character = ExtResource("34_b3pdd")
+to_equip_wep = ExtResource("28_6apcs")
+
+[node name="footall_sfx3" type="Node" parent="skele_05"]
+script = ExtResource("27_6v26p")
+
+[node name="ai_attack" type="Node" parent="skele_05"]
+script = ExtResource("28_5kths")
+
 [connection signal="body_entered" from="adventure_mode_demoLevel/Door of Trials/Area3D" to="adventure_mode_demoLevel/Door of Trials" method="trigger_animation"]
 [connection signal="body_entered" from="adventure_mode_demoLevel/Door of Trials2/Area3D" to="adventure_mode_demoLevel/Door of Trials2" method="trigger_animation"]
 [connection signal="body_exited" from="adventure_mode_demoLevel/Door of Trials3/Area3D" to="adventure_mode_demoLevel/Door of Trials3" method="trigger_animation"]

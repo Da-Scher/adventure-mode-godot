@@ -37,6 +37,8 @@ var look_lock = false
 @export var headsUpDisplay : Control
 
 var multiplayer_manager : Node
+# Signal for when a player attacks
+signal signal_attack(action : String)
 
 signal broadcast_action(packet : PackedByteArray)
 
@@ -205,9 +207,15 @@ func _collect_inputs(delta):
 		if Input.get_action_strength("p1_attack_light") > 0.5:
 			create_action_pack("attack_light")
 			thrall.enque_action("attack_light")
+			# Signal that player attacks
+			var action = "attack_light"
+			signal_attack.emit(action)
 		if Input.get_action_strength("p1_attack_heavy") > 0.5:
 			create_action_pack("attack_heavy")
 			thrall.enque_action("attack_heavy")
+			# Signal that player attacks
+			var action = "attack_heavy"
+			signal_attack.emit(action)
 		if Input.get_action_strength("p1_parry") > 0.5:
 			create_action_pack("attack_art")
 			thrall.enque_action("attack_art")
