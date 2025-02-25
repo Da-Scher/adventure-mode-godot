@@ -139,7 +139,7 @@ func recieve_action_message(packet: PackedByteArray):
 @rpc("unreliable")
 func send_action_packet_to_server(packet: PackedByteArray):
 	PeerGlobal.log_message("packet = " + str(packet)) 
-	print("packet PackedByteArray " + str(packet))
+	PeerGlobal.log_message("packet PackedByteArray " + str(packet))
 	rpc_id(1, "recieve_action_message", packet)
 
 func _collect_inputs(delta):
@@ -166,7 +166,7 @@ func _collect_inputs(delta):
 	# SECTION - Dodge and sprinting
 	if Input.is_action_just_released(player_prefix + "dodge"):
 		if ds_timer <= dodge_sprint_threshold:
-			print(str(multiplayer.get_unique_id()) + " dodge!")
+			PeerGlobal.log_message(str(multiplayer.get_unique_id()) + " dodge!")
 	if Input.is_action_pressed(player_prefix + "dodge"):
 		ds_timer += delta
 		if ds_timer > dodge_sprint_threshold:
@@ -229,7 +229,7 @@ func _collect_inputs(delta):
 				enemies.append(enemy)
 		look_lock = !look_lock
 		if look_lock:
-			print("look lock")
+			PeerGlobal.log_message("look lock")
 			# FIXME - thrall logic in socket
 			thrall.combat_mode = true
 			thrall.combat_relax_timer = 3.0
@@ -255,7 +255,7 @@ func _collect_inputs(delta):
 				ganty_thing.look_at(thrall.global_position + (thrall.global_basis.z * 50))
 
 		else:
-			print("look unlock")
+			PeerGlobal.log_message("look unlock")
 
 	if look_lock:
 		if locked_target.alive == false:
@@ -333,7 +333,7 @@ func dobox(box : Vector3i):
 	for x in range(box.x):
 		for y in range(box.y):
 			for z in range(box.z):
-				print("pos:(", x, ",", y, ",", z, ")")
+				PeerGlobal.log_message("pos:(", x, ",", y, ",", z, ")")
 
 
 func enthrall_new_thrall(new_thrall : Actor):
@@ -344,11 +344,11 @@ func enthrall_new_thrall(new_thrall : Actor):
 
 func input_hand_switching():
 	if Input.is_action_just_pressed(player_prefix + "attack_light"):
-		print("Toggle right hand")
+		PeerGlobal.log_message("Toggle right hand")
 		if thrall.hand_state == Actor.HandState.ONE_HAND:
 			thrall.hand_state = Actor.HandState.TWO_HAND
 		else:
 			thrall.hand_state = Actor.HandState.ONE_HAND
 	elif Input.is_action_just_pressed(player_prefix + "block"):
 		thrall.hand_state = Actor.HandState.UNARMED # hack for a test
-		print("Toggle left hand")
+		PeerGlobal.log_message("Toggle left hand")

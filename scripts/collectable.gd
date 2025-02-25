@@ -13,7 +13,7 @@ func _ready():
 
 func __body_enter(dat):
 	if collected == false:
-		print("Collect coin!")
+		PeerGlobal.log_message("Collect coin!")
 		$aud.play()
 		collected = true
 		var tween = get_tree().create_tween()

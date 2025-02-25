@@ -15,7 +15,7 @@ func _ready():
 	#skele = actor.get_node("skeleton/char/Skeleton3D")
 	things_worn = {}
 	#skele = recursive_search_for_skele(actor)
-	print("Skele: " + skele.name)
+	PeerGlobal.log_message("Skele: " + skele.name)
 	#var oldgar = garments
 	#garments = []
 	#for garment in oldgar:
@@ -32,12 +32,12 @@ func recursive_search_for_skele(node : Node) -> Skeleton3D:
 	var returnable = null
 	for child in node.get_children():
 		if child is Skeleton3D:
-			print("Found Skele: " +child.name)
+			PeerGlobal.log_message("Found Skele: " +child.name)
 			skele = child
 
 			return child
 		else:
-			print("Kid?: " +child.name)
+			PeerGlobal.log_message("Kid?: " +child.name)
 			returnable = recursive_search_for_skele(child)
 	return returnable
 
@@ -81,10 +81,10 @@ func accessory_item(acc : Accessory):
 	# Find item that exists physically, and return it
 	
 	if acc in things_worn:
-		print("Item found")
+		PeerGlobal.log_message("Item found")
 		return things_worn[acc]
 	else:
-		print("Item not found")
+		PeerGlobal.log_message("Item not found")
 		return null
 
 func outfit_save():
@@ -95,7 +95,7 @@ func outfit_save():
 	
 func outfit_load(_outfit_data : String):
 	# fail
-	print("LOAD FAILED")
+	PeerGlobal.log_message("LOAD FAILED")
 
 func undress():
 	for item in things_worn:

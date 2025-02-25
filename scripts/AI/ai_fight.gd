@@ -36,7 +36,7 @@ func _ready():
 	if player_socket != null:
 		player_socket.connect("signal_attack", Callable(self, "playerAttacking"), 0)
 	else:
-		print("Error connecting to player_socket signal")
+		PeerGlobal.log_message("Error connecting to player_socket signal")
 	start_pos = thrall.global_position
 	goTo = find_somewhere_to_go()
 	thrall.hand_state = Actor.HandState.TWO_HAND
@@ -121,9 +121,9 @@ func summonHelp():
 	var callDistance = 50
 	for enemy in nearbyEnemies:
 		if enemy is Actor and enemy != thrall and !enemy.hasCalled:
-			print(enemy.global_position.distance_to(thrall.global_position))
+			PeerGlobal.log_message(enemy.global_position.distance_to(thrall.global_position))
 			# For debugging
-			print("Enemy calls for help!")
+			PeerGlobal.log_message("Enemy calls for help!")
 			var enemyDistance = enemy.global_position.distance_to(thrall.global_position)
 			if enemyDistance <= callDistance:
 				# Move the enemy towards the player

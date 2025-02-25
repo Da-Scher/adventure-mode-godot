@@ -23,13 +23,13 @@ func _process(delta):
 	if fleeing == false && thrall.global_position.distance_to(fleeFrom.global_position) < fleeDist:
 		goTo = find_somewhere_to_go()
 		fleeing = true
-		print("Flee!")
+		PeerGlobal.log_message("Flee!")
 	elif fleeing:
 		var go_dir = goTo - thrall.global_position
 		#print(go_dir.length())
 		thrall.handle_movement(go_dir)
 		if thrall.global_position.distance_to(goTo) < 0.2: # NOTE Arrival threshold is magic number
-			print("Successfully fled!")
+			PeerGlobal.log_message("Successfully fled!")
 			fleeing = false
 	else:
 		var go_dir = (fleeFrom.global_position - thrall.global_position).normalized() * 0.1

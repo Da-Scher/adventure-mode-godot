@@ -79,7 +79,7 @@ func hurtbox_check() -> void:
 			AttackState.MISS:
 				pass 
 			AttackState.BLOCKED:
-				print("Attack blocked!") 	
+				PeerGlobal.log_message("Attack blocked!") 	
 				spawn_hit_effect(block_effect, hitbox.get_collision_point(x), hitbox.get_collision_point(x) + hitbox.get_collision_normal(x))			
 			_:
 				pass

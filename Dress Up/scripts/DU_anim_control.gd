@@ -39,5 +39,5 @@ func clear_buttons():
 
 
 func _play_anim_from_button(name : String):
-	print(name)
+	PeerGlobal.log_message(name)
 	anim.play(name)

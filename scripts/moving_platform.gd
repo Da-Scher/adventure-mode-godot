@@ -20,19 +20,19 @@ func _process(_delta: float) -> void:
 
 
 func begin_move(_nothing_body):
-	print("we did it")
+	PeerGlobal.log_message("we did it")
 	if tween.is_running():
-		print("tween was running")
+		PeerGlobal.log_message("tween was running")
 		return
 	tween.set_ease(ease_type)
 	tween.set_trans(transition)
 	if at_start:
-		print("move to pos 2")
+		PeerGlobal.log_message("move to pos 2")
 		tween.tween_property(self, "global_position", other_position, move_time)
 		tween.play()
 		at_start = false
 	else:
-		print("move to start pos")
+		PeerGlobal.log_message("move to start pos")
 		tween.tween_property(self, "global_position", start_position, move_time)
 		tween.play()
 		at_start = true

@@ -14,7 +14,7 @@ func add_item(item_name: String, quantity: int = 1):
 		inventory[item_name] = quantity
 	
 	inventory_updated.emit()  # Notify UI
-	print("Added: ", quantity, "x ", item_name)
+	PeerGlobal.log_message("Added: ", quantity, "x ", item_name)
 
 # Remove an item
 func remove_item(item_name: String, quantity: int = 1):
@@ -24,7 +24,7 @@ func remove_item(item_name: String, quantity: int = 1):
 			inventory.erase(item_name)
 
 	inventory_updated.emit()  # Notify UI
-	print("Removed: ", quantity, "x ", item_name)
+	PeerGlobal.log_message("Removed: ", quantity, "x ", item_name)
 
 # Check if an item exists
 func has_item(item_name: String) -> bool:
@@ -38,7 +38,7 @@ func get_quantity(item_name: String) -> int:
 func save_inventory():
 	var file = FileAccess.open("user://inventory.save", FileAccess.WRITE)
 	file.store_var(inventory)
-	print("Inventory saved.")
+	PeerGlobal.log_message("Inventory saved.")
 
 # Load inventory from file
 func load_inventory():
@@ -46,4 +46,4 @@ func load_inventory():
 		var file = FileAccess.open("user://inventory.save", FileAccess.READ)
 		inventory = file.get_var()
 		inventory_updated.emit()
-		print("Inventory loaded.")
+		PeerGlobal.log_message("Inventory loaded.")

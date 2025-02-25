@@ -10,7 +10,7 @@ func trigger_animation(nothing):
 	if locked:
 		return
 	# Dirty check for player 
-	print(name)
+	PeerGlobal.log_message(name)
 	if !nothing.is_in_group("players"):
 		return
 	if one_shot == false:

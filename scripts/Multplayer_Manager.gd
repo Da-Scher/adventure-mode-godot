@@ -35,7 +35,7 @@ func _process(_delta: float) -> void:
 
 func _on_butt_host_pressed() -> void:
 	if OS.get_name() == "Web":
-		print("Web build detected, quick, change everything about networking so it all breaks, quickly everyone!")
+		PeerGlobal.log_message("Web build detected, quick, change everything about networking so it all breaks, quickly everyone!")
 		_start_local_only()
 	server_menu.hide()
 	enet_peer.create_server(PORT)
@@ -58,8 +58,8 @@ func _start_local_only():
 	var new_player = PLAYER_SCENE.instantiate()
 	#new_player.name = "Thrall Local Player"
 	#add_child(new_player)
-	print("New player: Local only")
-	print("We is us!")
+	PeerGlobal.log_message("New player: Local only")
+	PeerGlobal.log_message("We is us!")
 	get_parent().find_child("Player Sockets").find_child("p1_psock_adventure").enthrall_new_thrall(new_player)
 	cam_gant.thrall = new_player
 	cam_gant.cam.target_current = new_player
@@ -67,7 +67,7 @@ func _start_local_only():
 	cam_gant.cam.freeze = false
 	#new_player.visible = true
 	#new_player.process_mode = Node.PROCESS_MODE_INHERIT
-	print("Iz noed? " + str(new_player.find_child("DresserUpper")))
+	PeerGlobal.log_message("Iz noed? " + str(new_player.find_child("DresserUpper")))
 	outfit_control.dress_up_controller = new_player.find_child("DresserUpper")
 
 
@@ -78,26 +78,24 @@ func add_player(peer_id):
 	add_child(new_player)
 	#var peer_count = multiplayer.get_peers().size()
 	pt_map[peer_id] = {"NODE": new_player, "NAME": new_player.name, "POSITION": new_player.position}
-	print("New player: " + str(peer_id))
-	PeerGlobal.log_message("pt_map[" + str(peer_id) + "] = " + str(pt_map[peer_id]))
+	PeerGlobal.log_message("New player: " + str(peer_id) + "; pt_map[" + str(peer_id) + "] = " + str(pt_map[peer_id]))
 	new_player.set_multiplayer_authority(peer_id)
 	if peer_id == multiplayer.get_unique_id():
-		print("We is us!")
+		PeerGlobal.log_message("We is us!")
 		get_parent().find_child("Player Sockets").find_child("p1_psock_adventure").enthrall_new_thrall(new_player)
 		cam_gant.thrall = new_player
 		cam_gant.cam.target_current = new_player
 		cam_gant.freeze = false
 		cam_gant.cam.freeze = false
-		print("Iz noed? " + str(new_player.find_child("DresserUpper")))
+		PeerGlobal.log_message("Iz noed? " + str(new_player.find_child("DresserUpper")))
 		outfit_control.dress_up_controller = new_player.find_child("DresserUpper")
 	else:
-		print("interloper")
+		PeerGlobal.log_message("interloper")
 
 # Packets that account for the time it took to reach the server.
 @rpc("unreliable", "any_peer")
 func attempt_to_broadcast_client_actions_to_clients(packet: PackedByteArray):
 	var message = bytes_to_var(packet)
-	print("attempt_to_broadcast_client_actions_to_clients(packet : PackedByteArray): ") 
-	print("packet PackedByteArray: " + str(packet) )
-	print("message Dictionary:     " + str(message))
+	PeerGlobal.log_message("packet PackedByteArray: " + str(packet) )
+	PeerGlobal.log_message("message Dictionary:     " + str(message))
 	player_socket.rpc("client_action", packet, pt_map[message["PEER"]])

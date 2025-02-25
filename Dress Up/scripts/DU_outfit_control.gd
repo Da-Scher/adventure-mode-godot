@@ -54,10 +54,10 @@ func load_resource_dir():
 		var file_name = dir.get_next()
 		while file_name != "":
 			if dir.current_is_dir():
-				print("Found directory: " + file_name)
+				PeerGlobal.log_message("Found directory: " + file_name)
 				pass
 			else:
-				print("Found file: " + file_name)
+				PeerGlobal.log_message("Found file: " + file_name)
 				#modules.append(load("res://Play_Resources/Modules/" + file_name))
 				if '.tres.remap' in file_name: # <---- NEW
 					file_name = file_name.trim_suffix('.remap') # <---- NEW
@@ -66,7 +66,7 @@ func load_resource_dir():
 				all_garments.append(new_res)
 			file_name = dir.get_next()
 	else:
-		print("An error occurred when trying to access the path.")
+		PeerGlobal.log_message("An error occurred when trying to access the path.")
 
 
 func clear_buttons():

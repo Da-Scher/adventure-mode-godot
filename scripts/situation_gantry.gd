@@ -24,9 +24,9 @@ func _physics_process(delta):
         if raycast.is_colliding():
             var collision_detection = raycast.get_collider()
             if collision_detection:
-                print("COLLIDING WITH", collision_detection.get_parent().name)
+                PeerGlobal.log_message("COLLIDING WITH", collision_detection.get_parent().name)
             else:
-                print("NO NAME PROPERTY MAYBE")
+                PeerGlobal.log_message("NO NAME PROPERTY MAYBE")
         else:
-            print("NO COLLISION AT ALL")
+            PeerGlobal.log_message("NO COLLISION AT ALL")
 
