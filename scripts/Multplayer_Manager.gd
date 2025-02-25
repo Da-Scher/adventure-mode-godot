@@ -1,5 +1,7 @@
 extends Node
 
+const SCRIPT_NAME : String = "Multiplayer_Manager.gd"
+
 const PLAYER_SCENE = preload("res://prefabs/actor.tscn")
 const PORT = 8080
 var enet_peer = ENetMultiplayerPeer.new()
@@ -77,7 +79,7 @@ func add_player(peer_id):
 	#var peer_count = multiplayer.get_peers().size()
 	pt_map[peer_id] = {"NODE": new_player, "NAME": new_player.name, "POSITION": new_player.position}
 	print("New player: " + str(peer_id))
-	print("pt_map[" + str(peer_id) + "] = " + str(pt_map[peer_id]))
+	PeerGlobal.log_message("pt_map[" + str(peer_id) + "] = " + str(pt_map[peer_id]))
 	new_player.set_multiplayer_authority(peer_id)
 	if peer_id == multiplayer.get_unique_id():
 		print("We is us!")

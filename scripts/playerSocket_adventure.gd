@@ -7,6 +7,8 @@ extends Node
 # or someone comes over the network and controlls something
 # Made by KaletheQuick
 
+const SCRIPT_NAME = "playerSocket_adventure.gd"
+
 @export var thrall : CharacterBody3D # the thing to be controlled 
 @export var player_prefix = "p1_" # used for local multiplayer
 
@@ -112,35 +114,31 @@ func create_action_pack(action: String):
 @rpc("unreliable")
 func client_action(packet: PackedByteArray, pt: Dictionary):
 	var message = bytes_to_var(packet)
-	print("client_action(packet : PackedByteArray) --")
-	print("packet PackedByteArray:     " + str(packet))
-	print("Decoded Message Dictionary: " + str(message))
+	PeerGlobal.log_message("Decoded message: " + str(message))
 	if not pt.is_empty():
-		print("pt entry: " + str(pt))
+		PeerGlobal.log_message("pt entry: " + str(pt))
 	else:
-		print("pt_map entry " + str(message['PEER']) + " does not exist.")
+		PeerGlobal.log_message("pt_map entry " + str(message['PEER']) + " does not exist.")
 	pass
 
 @rpc("unreliable", "any_peer")
 func recieve_action_message(packet: PackedByteArray):
 	var message = bytes_to_var(packet)
-	print("recieve_action_message(packet : PackedByteArray)")
-	print("packet PackedByteArray:        " + str(packet) )
-	print("message Dictionary:            " + str(message))
+	PeerGlobal.log_message("Decoded message: " + str(message))
 	var t1 = message["TIME"]
 	var t2 = Time.get_unix_time_from_system()
 	var id = message["PEER"]
 	var act = message["ACTION"]
 	var bounce_message = {"PEER": id, "TIME1": t1, "TIME2": t2, "ACTION": act}
 	var bounce_packet = var_to_bytes(bounce_message)
-	print("bounce_message Dictionary:     " + str(bounce_message))
-	print("bounce_packet PackedByteArray: " + str(bounce_packet) )
+	PeerGlobal.log_message("bounce_message Dictionary:     " + str(bounce_message))
+	PeerGlobal.log_message("bounce_packet PackedByteArray: " + str(bounce_packet) )
 	broadcast_action.emit(bounce_packet)
 
 #rpc are from client -> server -> client
 @rpc("unreliable")
 func send_action_packet_to_server(packet: PackedByteArray):
-	print("send_action_packet_to_server") 
+	PeerGlobal.log_message("packet = " + str(packet)) 
 	print("packet PackedByteArray " + str(packet))
 	rpc_id(1, "recieve_action_message", packet)
 
@@ -340,6 +338,7 @@ func dobox(box : Vector3i):
 
 func enthrall_new_thrall(new_thrall : Actor):
 	thrall = new_thrall
+	PeerGlobal.log_message("new thrall created")
 	headsUpDisplay.inspect_new_thrall(thrall)
 
 
