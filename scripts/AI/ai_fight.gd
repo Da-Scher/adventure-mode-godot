@@ -14,7 +14,7 @@ var timer = 0.0
 # Flag to determine whether a player is attacking
 var player_attacking = false
 
-enum ATT_STATE {IDLE, RETREATING, ATTACKING, DODGING}
+enum ATT_STATE {IDLE, RETREATING, ATTACKING, DODGING, FLEEING}
 var state = ATT_STATE.IDLE
 
 var start_pos
@@ -55,6 +55,14 @@ func _process(delta):
 	if thrall.name == "skele_01" and thrall.character.health_current < 2 and thrall.hasCalled != true:
 		summonHelp()
 		thrall.hasCalled = true
+	# Testing for heal()
+	if thrall.name == "skele_04" and thrall.character.health_current < 2:
+		heal(thrall, 5)
+	# Testing for flee()
+	#if thrall.name == "skele_02" and thrall.character.health_current < 2:
+		#state = ATT_STATE.FLEEING
+		#print(thrall.name, " begins to flee!")
+
 	if is_instance_valid(thrall) and thrall.alive == false:
 		return
 	timer -= delta
@@ -104,11 +112,29 @@ func _process(delta):
 	var go_dir = goTo - thrall.global_position
 	thrall.handle_movement(go_dir)
 
+# Feature to add flee, used with low health parameter and fleeing state when declaring logic
+func flee():
+	var direction = (thrall.global_position - player.global_position).normalized()
+	var speed = 1
+	var velocity = direction * speed
+	var localVelocity = thrall.global_basis.inverse() * velocity
+	thrall.desired_turn = -localVelocity.x
+	thrall.handle_movement(velocity)
+	goTo = find_somewhere_to_go()
+	return
+	
+# Feature to allow enemies to heal, could use an animation or effect to visualize it
+func heal(thrall, healAmount):
+	if thrall.hasHealed == false:
+		thrall.character.health_current += healAmount
+		thrall.hasHealed = true
+		print(thrall.name, " healed for ", healAmount, ".")
+
 # Function used for the signal, sets the 
 # player_attacking flag to true 
 func playerAttacking(action : String):
 	player_attacking = true
-	await get_tree().create_timer(1).timeout
+	await get_tree().create_timer(0.5).timeout
 	player_attacking = false
 	
 
@@ -118,15 +144,21 @@ func summonHelp():
 	# All enemies within radius
 	var nearbyEnemies = get_tree().get_nodes_in_group("enemies")
 	# Assignable variable to adjust radius
-	var callDistance = 50
+	var summonDistance = 50
 	for enemy in nearbyEnemies:
 		if enemy is Actor and enemy != thrall and !enemy.hasCalled:
-			print(enemy.global_position.distance_to(thrall.global_position))
-			# For debugging
-			print("Enemy calls for help!")
 			var enemyDistance = enemy.global_position.distance_to(thrall.global_position)
-			if enemyDistance <= callDistance:
+			# White-box test to determine which enemies to summon
+			# as well as check the bounds of specified summon distance
+			if enemyDistance > summonDistance:
+				print("Did not summon enemy ", enemy.name, ", their distance is ", enemyDistance, " while the summon distance is ", summonDistance, ".")
+				continue
+			elif summonDistance < 0:
+				print("Invalid parameter for summon distance.")
+				continue
+			else:
 				# Move the enemy towards the player
+				print("Summoned enemy ", enemy.name, ", their distance was ", enemyDistance, ".")
 				enemy.global_position = player.global_position
 				enemy.handle_movement((player.global_position - enemy.global_position).normalized())
 				enemy.combat_mode = true
@@ -200,6 +232,9 @@ func in_attack_range(_delta):
 	thrall.desired_turn = transformed_move_dir.x
 
 	match state:
+		ATT_STATE.FLEEING:
+			flee()
+			return
 		ATT_STATE.RETREATING:
 			retreating()
 			return
@@ -244,6 +279,24 @@ func retreating():
 			state = ATT_STATE.ATTACKING
 			timer = 4.0
 
+# Integration test to verify that enemies are dodging in
+# node ai_fight based on attack signal from node playerSocket_adventure.
+# Test includes thrallDodged variable, as well as testDodge()
+# and testAttackDodge() function. When an enemy dodges, testDodge()
+# and testAttackDodge() are called. 
+var thrallDodged = false
+func testDodge():
+	thrallDodged = true
+	await get_tree().create_timer(0.1).timeout
+	thrallDodged = false
+func testAttackDodge():
+	if player_attacking == true and thrallDodged == true:
+		print("Enemy dodged based on player attack.")
+		return
+	elif thrallDodged and player_attacking == false:
+		print("Enemy dodged without player attacking.")
+		return
+	
 func dodging():
 	#print("DODGE!")
 	# move near player strafe around them
@@ -252,10 +305,13 @@ func dodging():
 	var randAct = randf()
 	if randAct < 0.5 && player_attacking == true:
 		thrall.enque_action("dodge")
-		player_attacking == false
+		testDodge()
+		testAttackDodge()
 	if randAct < 0.1 && player_attacking == true:
 		goTo = thrall.global_position
 		thrall.enque_action("dodge")
+		testDodge()
+		testAttackDodge()
 	if timer <= 0:
 		if randf() < 0.5 && thrall.character.health_current < 2:
 			state = ATT_STATE.RETREATING
