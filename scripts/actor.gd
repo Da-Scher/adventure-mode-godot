@@ -3,7 +3,7 @@ extends CharacterBody3D
 class_name Actor
 
 @export var character : Character
-
+var hasHealed = false
 var hasCalled = false
 var desired_move = Vector3.ZERO
 var desired_turn = 0.0 # left or right -+ 

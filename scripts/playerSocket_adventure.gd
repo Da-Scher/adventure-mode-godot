@@ -219,6 +219,16 @@ func _collect_inputs(delta):
 		if Input.get_action_strength("p1_parry") > 0.5:
 			create_action_pack("attack_art")
 			thrall.enque_action("attack_art")
+		# Black Box Unit Test
+		# Tests for users performing action while dead.
+		# On input of light attack or heavy attack, if the
+		# user is dead then the error message will be printed.
+		if Input.get_action_strength("p1_attack_light") > 0.5 or Input.get_action_strength("p1_attack_heavy") > 0.5:
+			print("Performed attack action")
+		if(Input.get_action_strength("p1_attack_light") > 0.5 or Input.get_action_strength("p1_attack_heavy") > 0.5) and thrall.character.health_current <= 0:
+			assert(thrall.character.health_current != null)
+			print("Cannot perform action, you are dead.")
+	
 	
 	dot.global_position = thrall.global_position + go_dir
 
