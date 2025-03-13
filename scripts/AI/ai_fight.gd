@@ -141,28 +141,36 @@ func playerAttacking(action : String):
 # Function to allow enemies to summon help when they
 # reach below a certain threshold
 func summonHelp():
-	# All enemies within radius
+	# White-box Unit Test 
+	# Tests to determine which enemies to are valid to summon 
+	# and which are invalid. Also checks the bounds of specified summon distance
+	# to make sure they are within valid parameters. Test is implemented within the summonHelp function.
 	var nearbyEnemies = get_tree().get_nodes_in_group("enemies")
+	assert(nearbyEnemies != null)
 	# Assignable variable to adjust radius
 	var summonDistance = 50
 	for enemy in nearbyEnemies:
+		assert(enemy != null)
 		if enemy is Actor and enemy != thrall and !enemy.hasCalled:
+			assert(enemy.global_position != null)
+			assert (thrall.global_position != null)
+			assert(enemy.global_position.distance_to(thrall.global_position) != null)
 			var enemyDistance = enemy.global_position.distance_to(thrall.global_position)
-			# White-box test to determine which enemies to summon
-			# as well as check the bounds of specified summon distance
+			assert(enemyDistance != null)
+			assert(summonDistance >= 0)
 			if enemyDistance > summonDistance:
 				print("Did not summon enemy ", enemy.name, ", their distance is ", enemyDistance, " while the summon distance is ", summonDistance, ".")
 				continue
-			elif summonDistance < 0:
-				print("Invalid parameter for summon distance.")
-				continue
 			else:
+				assert(enemyDistance <= summonDistance)
 				# Move the enemy towards the player
 				print("Summoned enemy ", enemy.name, ", their distance was ", enemyDistance, ".")
+				assert(enemy.global_position != null)
+				assert(player.global_position != null)
 				enemy.global_position = player.global_position
 				enemy.handle_movement((player.global_position - enemy.global_position).normalized())
 				enemy.combat_mode = true
-	return
+			return
 	
 # Patrol function that takes destination as input
 # Will walk to destination and return to starting position on loop
@@ -279,11 +287,12 @@ func retreating():
 			state = ATT_STATE.ATTACKING
 			timer = 4.0
 
-# Integration test to verify that enemies are dodging in
+# Integration test 
+# Tests to verify that enemies are dodging in
 # node ai_fight based on attack signal from node playerSocket_adventure.
-# Test includes thrallDodged variable, as well as testDodge()
-# and testAttackDodge() function. When an enemy dodges, testDodge()
-# and testAttackDodge() are called. 
+# When the signal is received, player_attacking is set to true.
+# Test is implemented within the dodging() function,
+# and includes the testDodge() and testAttackDodge() function. 
 var thrallDodged = false
 func testDodge():
 	thrallDodged = true
@@ -301,6 +310,8 @@ func dodging():
 	#print("DODGE!")
 	# move near player strafe around them
 	thrall.dodge = true
+	assert(thrall.global_basis.x != null)
+	assert(thrall.global_position != null)
 	goTo = thrall.global_position + thrall.global_basis.x
 	var randAct = randf()
 	if randAct < 0.5 && player_attacking == true:
@@ -308,6 +319,7 @@ func dodging():
 		testDodge()
 		testAttackDodge()
 	if randAct < 0.1 && player_attacking == true:
+		assert(thrall.global_position != null)
 		goTo = thrall.global_position
 		thrall.enque_action("dodge")
 		testDodge()
