@@ -58,12 +58,15 @@ var l_wep : Armament
 var hurtboxes
 var alive = true
 
+var delay : float
+
 # SECTION Signals 
 # SECTION for leveling bar
 signal killed_something
 signal xp_get
 signal item_get(item_name)
 signal attack_hit(actor_hit, attack_id)
+signal name_tag_color(color_hex)
 # !SECTION Signals
 # !SECTION
 
@@ -398,3 +401,15 @@ func invulnerability_time(time : float):
 	await timer.timeout
 	invulnerable = false
 # !SECTION - Animation helper functions
+
+func set_delay(dt : float):
+	delay = dt
+	set_delay_color()
+
+func set_delay_color():
+	if delay < 0.1 and delay >= 0.0:
+		emit_signal("name_tag_color", 0x7BB662)
+	elif delay >= 0.1 and delay < 0.2:
+		emit_signal("name_tag_color", 0xFFD301)
+	else:
+		emit_signal("name_tag_color", 0xE03C32)

@@ -45,11 +45,17 @@ func _on_butt_host_pressed() -> void:
 
 func _on_butt_connect_pressed() -> void:
 	var server_ip = ip_input.text
+	PeerGlobal.log_message("connect_button_pressed")
 	# TODO Validate ip
 	server_menu.hide()
-	enet_peer.create_client(server_ip, PORT)
-	multiplayer.multiplayer_peer = enet_peer
-	server_menu.visible = false
+	var error = enet_peer.create_client(server_ip, PORT)
+	if error != OK:
+		PeerGlobal.log_message("create_client failed")
+		return
+	else:
+		PeerGlobal.log_message("create_client success")
+		multiplayer.multiplayer_peer = enet_peer
+		server_menu.visible = false
 
 func _start_local_only():	
 	server_menu.hide()
@@ -94,8 +100,12 @@ func add_player(peer_id):
 # Packets that account for the time it took to reach the server.
 @rpc("unreliable", "any_peer")
 func attempt_to_broadcast_client_actions_to_clients(packet: PackedByteArray):
-	var message = bytes_to_var(packet)
 	print("attempt_to_broadcast_client_actions_to_clients(packet : PackedByteArray): ") 
 	print("packet PackedByteArray: " + str(packet) )
-	print("message Dictionary:     " + str(message))
-	player_socket.rpc("client_action", packet, pt_map[message["PEER"]])
+	player_socket.rpc("client_action", packet)
+	
+@rpc("reliable", "authority")
+func high_latency_removal(peer_id):
+	if str(peer_id) in get_children() and peer_id != 1:
+		peer_id.free_queue()
+		multiplayer.multiplayer_peer.disconnect_peer(peer_id)
