@@ -36,7 +36,6 @@ var look_lock = false
 
 @export var headsUpDisplay : Control
 
-var multiplayer_manager : Node
 # Signal for when a player attacks
 signal signal_attack(action : String)
 
@@ -110,15 +109,16 @@ func create_action_pack(action: String):
 		send_action_packet_to_server(packet)
 
 @rpc("unreliable")
-func client_action(packet: PackedByteArray, pt: Dictionary):
+func client_action(packet: PackedByteArray):
 	var message = bytes_to_var(packet)
-	print("client_action(packet : PackedByteArray) --")
-	print("packet PackedByteArray:     " + str(packet))
-	print("Decoded Message Dictionary: " + str(message))
-	if not pt.is_empty():
-		print("pt entry: " + str(pt))
-	else:
-		print("pt_map entry " + str(message['PEER']) + " does not exist.")
+	PeerGlobal.log_message("client_action(packet : PackedByteArray) --\npacket PackedByteArray:     " + str(packet) + "\nDecoded Message Dictionary: " + str(message))
+	var multiplayer_manager = get_parent().get_parent().get_node("Multplayer Manager")
+	var peer_nodes = multiplayer_manager.get_children()
+	for peer in peer_nodes:
+		if str(message['PEER']) == peer.name:
+			peer.get_node("skeleton").get_node("AnimationPlayer").play('aLib_combat_sword/combat_attack_light_01')
+			return
+	print("pt_map entry " + str(message['PEER']) + " does not exist.")
 	pass
 
 @rpc("unreliable", "any_peer")
@@ -363,3 +363,37 @@ func input_hand_switching():
 	elif Input.is_action_just_pressed(player_prefix + "block"):
 		thrall.hand_state = Actor.HandState.UNARMED # hack for a test
 		print("Toggle left hand")
+		
+@rpc("reliable", "authority")
+func update_ping():
+	for peer in get_parent().get_parent().get_node("Multplayer Manager").get_children():
+		rpc_id(int(peer.name), "report_delay")
+
+@rpc("reliable", "authority")
+func ping(t1, peer):
+	var multiplayer_manager = get_parent().get_parent().get_node("Multplayer Manager")
+	var peer_nodes = multiplayer_manager.get_children()
+	for p in peer_nodes:
+		if p.name == str(peer):
+			var dt = Time.get_unix_time_from_system() - t1
+			p.set_delay(dt) # set delay for peers on server
+
+@rpc("reliable", "any_peer", "call_remote")
+func report_delay():
+	rpc_id(1, "ping", Time.get_unix_time_from_system(), multiplayer.get_unique_id())
+
+func calculate_animation_offset(transit_time : float, animation_time_limit : float) -> float:
+	var mm = get_parent().get_parent().get_node("Multplayer Manager")
+	var tl : float
+	var t3 = Time.get_unix_time_from_system()
+	if transit_time < 0:
+		# potential debouncing technique
+		return -1 # don't play the animation
+	else:
+		# normal case
+		tl = t3 - transit_time
+	# If the connection is soooo slow then the animation should not play
+	if tl >= animation_time_limit:
+		mm.high_latency_removal.rpc_id(1, multiplayer.get_unique_id())
+		return -1 # don't play the animation
+	return tl

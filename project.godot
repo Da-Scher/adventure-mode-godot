@@ -19,6 +19,10 @@ config/icon="res://icon.svg"
 
 buses/default_bus_layout="res://art/audio/default_bus_layout.tres"
 
+[autoload]
+
+PeerGlobal="*res://peer_global.gd"
+
 [display]
 
 window/size/viewport_width=1920
@@ -28,6 +32,10 @@ window/size/initial_position=Vector2i(1920, 0)
 window/size/always_on_top=true
 window/stretch/mode="viewport"
 window/stretch/aspect="expand"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 
 [file_customization]
 
