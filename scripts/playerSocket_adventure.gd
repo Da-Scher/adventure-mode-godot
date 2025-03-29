@@ -136,13 +136,14 @@ func client_action(packet: PackedByteArray):
 	print("pt_map entry " + str(message['PEER']) + " does not exist.")
 	pass
 
+@rpc("unreliable", "authority")
 func client_movement(p : PackedByteArray):
 	var message : Dictionary = bytes_to_var(p)
 	var mm = get_parent().get_parent().get_node("Multplayer Manager")
 	var peer_nodes = mm.get_children()
 	PeerGlobal.log_message("message: " + str(message))
 	for peer in peer_nodes:
-		if str(message['PEER'] == peer.name):
+		if str(message['PEER']) == peer.name:
 			peer.handle_movement(message['MOVEMENT'])
 
 @rpc("unreliable", "any_peer")
@@ -213,8 +214,7 @@ func _collect_inputs(delta):
 		thrall.enque_action("spell")
 	
 	# Tell the world your intended move
-	if not go_dir.is_zero_approx():
-		create_movement_pack(go_dir)
+	create_movement_pack(go_dir)
 	thrall.handle_movement(go_dir)
 	if Input.is_action_pressed(player_prefix + "event_action"): 
 		# NOTE - In ER holding ^ this would bring up a quick item D-pad menu, and also do hand switching. 
