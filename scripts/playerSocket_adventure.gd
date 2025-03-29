@@ -116,7 +116,7 @@ func client_action(packet: PackedByteArray):
 	var peer_nodes = multiplayer_manager.get_children()
 	for peer in peer_nodes:
 		if str(message['PEER']) == peer.name:
-			peer.get_node("skeleton").get_node("AnimationPlayer").play('aLib_combat_sword/combat_attack_light_01')
+			peer.enque_action(message['ACTION'])
 			return
 	print("pt_map entry " + str(message['PEER']) + " does not exist.")
 	pass
