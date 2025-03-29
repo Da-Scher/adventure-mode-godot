@@ -21,8 +21,9 @@ var player_socket : Node
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	player_socket = get_parent().get_node("Player Sockets/p1_psock_adventure")
-	player_socket.connect("broadcast_action", Callable(self, "attempt_to_broadcast_client_actions_to_clients")
+	player_socket.connect("broadcast_action", Callable(self, "attempt_broadcast_actions_to_remotes")
 , 0)
+	player_socket.connect("broadcast_movement", Callable(self, "attempt_broadcast_movements_to_remotes"))
 	pass # Replace with function body.
 
 
@@ -99,11 +100,16 @@ func add_player(peer_id):
 
 # Packets that account for the time it took to reach the server.
 @rpc("unreliable", "any_peer")
-func attempt_to_broadcast_client_actions_to_clients(packet: PackedByteArray):
-	print("attempt_to_broadcast_client_actions_to_clients(packet : PackedByteArray): ") 
-	print("packet PackedByteArray: " + str(packet) )
+func attempt_broadcast_actions_to_remotes(packet: PackedByteArray):
+	PeerGlobal.log_message("attempt_broadcast_actions_to_remotes(packet : PackedByteArray) ") 
+	#print("packet PackedByteArray: " + str(packet))
 	player_socket.rpc("client_action", packet)
-	
+
+@rpc("unreliable", "any_peer")
+func attempt_broadcast_movements_to_remotes(p : PackedByteArray):
+	PeerGlobal.log_message("attempt_broadcast_movements_to_remotes(p : PackedByteArray) ")
+	player_socket.rpc("client_movement", p)
+
 @rpc("reliable", "authority")
 func high_latency_removal(peer_id):
 	if str(peer_id) in get_children() and peer_id != 1:
