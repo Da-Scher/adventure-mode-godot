@@ -41,6 +41,8 @@ signal signal_attack(action : String)
 
 signal broadcast_action(packet : PackedByteArray)
 
+signal broadcast_movement(packet : PackedByteArray)
+
 # acreas and interactable things
 
 func _ready():
@@ -108,7 +110,20 @@ func create_action_pack(action: String):
 		var packet = var_to_bytes(action_data)
 		send_action_packet_to_server(packet)
 
-@rpc("unreliable")
+func create_movement_pack(desired_movement : Vector3):
+	var id = multiplayer.get_unique_id()
+	var movement_data = {"PEER": id, "MOVEMENT": desired_movement}
+	var packet = var_to_bytes(movement_data)
+	if multiplayer.is_server():
+		broadcast_movement.emit(packet)
+	else:
+		rpc_id(1, "recieve_movement_packet", packet)
+
+# Server only function
+@rpc("unreliable", "any_peer")
+func recieve_movement_packet(p : PackedByteArray):
+	broadcast_movement.emit(p)
+@rpc("unreliable", "authority")
 func client_action(packet: PackedByteArray):
 	var message = bytes_to_var(packet)
 	PeerGlobal.log_message("client_action(packet : PackedByteArray) --\npacket PackedByteArray:     " + str(packet) + "\nDecoded Message Dictionary: " + str(message))
@@ -121,8 +136,18 @@ func client_action(packet: PackedByteArray):
 	print("pt_map entry " + str(message['PEER']) + " does not exist.")
 	pass
 
+func client_movement(p : PackedByteArray):
+	var message : Dictionary = bytes_to_var(p)
+	var mm = get_parent().get_parent().get_node("Multplayer Manager")
+	var peer_nodes = mm.get_children()
+	PeerGlobal.log_message("message: " + str(message))
+	for peer in peer_nodes:
+		if str(message['PEER'] == peer.name):
+			peer.handle_movement(message['MOVEMENT'])
+
 @rpc("unreliable", "any_peer")
 func recieve_action_message(packet: PackedByteArray):
+	# TODO: Consider sanity checks here
 	var message = bytes_to_var(packet)
 	print("recieve_action_message(packet : PackedByteArray)")
 	print("packet PackedByteArray:        " + str(packet) )
@@ -160,9 +185,8 @@ func _collect_inputs(delta):
 	mv_x.y = 0
 	mv_x = mv_x.normalized()
 	mv_x = mv_x * input_dir.x
-	var go_dir = (mv_x + mv_z)
+	var go_dir : Vector3 = (mv_x + mv_z)
 	
-
 	go_dir.y = Input.get_axis(player_prefix + "crouch", player_prefix + "jump")
 	
 	# SECTION - Dodge and sprinting
@@ -188,6 +212,9 @@ func _collect_inputs(delta):
 		create_action_pack("spell")
 		thrall.enque_action("spell")
 	
+	# Tell the world your intended move
+	if not go_dir.is_zero_approx():
+		create_movement_pack(go_dir)
 	thrall.handle_movement(go_dir)
 	if Input.is_action_pressed(player_prefix + "event_action"): 
 		# NOTE - In ER holding ^ this would bring up a quick item D-pad menu, and also do hand switching. 
