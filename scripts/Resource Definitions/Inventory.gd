@@ -1,5 +1,6 @@
 extends Resource
 class_name Inventory
+
 # Dictionary to store inventory items
 var inventory: Dictionary = {}
 
@@ -47,3 +48,17 @@ func load_inventory():
 		inventory = file.get_var()
 		inventory_updated.emit()
 		print("Inventory loaded.")
+
+## Clear the inventory
+func clear_inventory():
+	inventory.clear()
+	inventory_updated.emit()
+
+## Transfer an item to another inventory
+func transfer_item(item_name: String, quantity: int, target_inventory: Inventory):
+	if has_item(item_name) and get_quantity(item_name) >= quantity:
+		remove_item(item_name, quantity)
+		target_inventory.add_item(item_name, quantity)
+# Get all items in the inventory
+func get_items() -> Dictionary:
+	return inventory
