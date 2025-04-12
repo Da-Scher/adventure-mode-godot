@@ -8,6 +8,7 @@ var hasCalled = false
 var desired_move = Vector3.ZERO
 var desired_turn = 0.0 # left or right -+ 
 var lock_targ_pos : Vector3 = Vector3.ZERO
+var lock_targ : CharacterBody3D = null
 # NOTE - Desired move used to handle everything. But locking on and strafing 
 # 		 involved having the directing you were looking, IE turned towards
 #		 and the direction of movement, be separate. 
@@ -175,7 +176,7 @@ func apply_animation_params():
 		animation_tree.set(ani, 1 if "block" in action_q.keys() else 0)
 	for ani in aset_MOVE:
 		animation_tree.set(ani, transformed_move_dir)
-	for ani in aset_TURN:			
+	for ani in aset_TURN:
 		animation_tree.set(ani, desired_turn)
 	for ani in aset_JUMP:
 		animation_tree.set(ani, 1 if desired_move.y > 0.5 else 0)
