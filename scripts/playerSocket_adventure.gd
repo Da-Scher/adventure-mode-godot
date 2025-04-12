@@ -11,7 +11,7 @@ extends Node
 @export var player_prefix = "p1_" # used for local multiplayer
 
 @export var enemies : Array[Actor]
-var locked_target : Actor
+# var locked_target : Actor
 
 var primary_thrall = true
 
@@ -42,6 +42,8 @@ signal signal_attack(action : String)
 signal broadcast_action(packet : PackedByteArray)
 
 signal broadcast_movement(packet : PackedByteArray)
+
+signal broadcast_target(packet : PackedByteArray)
 
 # acreas and interactable things
 
@@ -114,7 +116,7 @@ func create_movement_pack(desired_movement : Vector3, target : CharacterBody3D =
 	# TODO: get the calculation for desired_turn from the _get_inputs function.
 	var calculate_turn_transform = null
 	if target != null:
-		calculate_turn_transform = Vector2(( thrall.global_basis.inverse() * (thrall.global_position - locked_target.global_position).normalized()).x,-( thrall.global_basis.inverse() * -desired_movement).z)
+		calculate_turn_transform = Vector2(( thrall.global_basis.inverse() * (thrall.global_position - thrall.lock_targ.global_position).normalized()).x,-( thrall.global_basis.inverse() * -desired_movement).z)
 	else:
 		calculate_turn_transform = Vector2(( thrall.global_basis.inverse() * -desired_movement).x,-( thrall.global_basis.inverse() * -desired_movement).z)
 	var id = multiplayer.get_unique_id()
@@ -125,10 +127,24 @@ func create_movement_pack(desired_movement : Vector3, target : CharacterBody3D =
 	else:
 		rpc_id(1, "recieve_movement_packet", packet)
 
+func create_lock_pack(entity : StringName):
+	var id = multiplayer.get_unique_id()
+	var target_data = {"PEER": id, "TARGET": entity}
+	var packet = var_to_bytes(target_data)
+	if multiplayer.is_server():
+		broadcast_target.emit(packet)
+	else:
+		rpc_id(1, "recieve_target_packet", packet)
+
 # Server only function
 @rpc("unreliable", "any_peer")
 func recieve_movement_packet(p : PackedByteArray):
 	broadcast_movement.emit(p)
+
+@rpc("unreliable", "any_peer")
+func recieve_target_packet(p : PackedByteArray):
+	broadcast_target.emit(p)
+
 @rpc("unreliable", "authority")
 func client_action(packet: PackedByteArray):
 	var message = bytes_to_var(packet)
@@ -152,6 +168,25 @@ func client_movement(p : PackedByteArray):
 		if str(message['PEER']) == peer.name:
 			peer.handle_movement(message['MOVEMENT'])
 			peer.desired_turn = message['ROTATE'].x
+
+@rpc("unreliable", "authority")
+func client_target(p : PackedByteArray):
+	var message : Dictionary = bytes_to_var(p)
+	var mm = get_parent().get_parent().get_node("Multplayer Manager")
+	var peer_nodes = mm.get_children()
+	for peer in peer_nodes:
+		if str(message['PEER']) == peer.name:
+			print(str(message))
+			var enemies_list = get_tree().get_nodes_in_group("enemies")
+			for enemy in enemies_list:
+				if enemy.name == message['TARGET']:
+					peer.lock_targ = enemy
+					peer.combat_mode = true
+					peer.combat_relax_timer = 3.0
+					return
+			peer.lock_targ = null
+			peer.combat_mode = false
+			peer.combat_relax_timer = 0
 
 @rpc("unreliable", "any_peer")
 func recieve_action_message(packet: PackedByteArray):
@@ -194,8 +229,6 @@ func _collect_inputs(delta):
 	mv_x = mv_x.normalized()
 	mv_x = mv_x * input_dir.x
 	var go_dir : Vector3 = (mv_x + mv_z)
-	
-	print("input_dir = " + str(input_dir))
 	
 	go_dir.y = Input.get_axis(player_prefix + "crouch", player_prefix + "jump")
 	
@@ -296,22 +329,24 @@ func _collect_inputs(delta):
 					winner = enemy
 					win_dot = my_dot
 			if winner != null:
-				locked_target = winner
+				thrall.lock_targ = winner
+				create_lock_pack(winner.name)
 			else:
-				locked_target = null
+				thrall.lock_targ = null
 				look_lock = false
 				ganty_thing.look_at(thrall.global_position + (thrall.global_basis.z * 50))
 
 		else:
 			print("look unlock")
+			create_lock_pack("")
 
 	if look_lock:
-		if locked_target.alive == false:
+		if thrall.lock_targ.alive == false:
 			look_lock = false
-			locked_target = null
+			thrall.lock_targ = null
 		else:
-			mainCam.target_curr = locked_target.global_position + Vector3(0,2,0)
-			dot.global_position = locked_target.global_position + Vector3(0,2,0)
+			mainCam.target_curr = thrall.lock_targ.global_position + Vector3(0,2,0)
+			dot.global_position = thrall.lock_targ.global_position + Vector3(0,2,0)
 			dot.visible = true
 			
 			dot.look_at(mainCam.global_position)
@@ -319,9 +354,9 @@ func _collect_inputs(delta):
 			dot.scale = Vector3.ONE + (Vector3.ONE * ((1 + (sin(Time.get_unix_time_from_system() * 12)*0.5))) * 0.5 )
 
 			#TODO - put this look vector somewhere else? idk
-			var transformed_move_dir =  Vector2(( thrall.global_basis.inverse() * (thrall.global_position - locked_target.global_position).normalized()).x,-( thrall.global_basis.inverse() * -go_dir).z)
+			var transformed_move_dir =  Vector2(( thrall.global_basis.inverse() * (thrall.global_position - thrall.lock_targ.global_position).normalized()).x,-( thrall.global_basis.inverse() * -go_dir).z)
 			thrall.desired_turn = transformed_move_dir.x
-			thrall.lock_targ_pos = locked_target.global_position
+			thrall.lock_targ_pos = thrall.lock_targ.global_position
 			#print(transformed_move_dir.x)
 	else:
 		dot.visible = false
@@ -330,6 +365,9 @@ func _collect_inputs(delta):
 		var transformed_move_dir =  Vector2(( thrall.global_basis.inverse() * -go_dir).x,-( thrall.global_basis.inverse() * -go_dir).z)
 		thrall.desired_turn = transformed_move_dir.x
 		thrall.lock_targ_pos = Vector3.ZERO
+		thrall.lock_targ = null
+		create_lock_pack("")
+		
 
 @export var action_prompt : Control
 func find_interactable_objects():
@@ -381,7 +419,8 @@ func dobox(box : Vector3i):
 	for x in range(box.x):
 		for y in range(box.y):
 			for z in range(box.z):
-				print("pos:(", x, ",", y, ",", z, ")")
+				#print("pos:(", x, ",", y, ",", z, ")")
+				pass
 
 
 func enthrall_new_thrall(new_thrall : Actor):

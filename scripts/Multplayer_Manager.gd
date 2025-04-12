@@ -24,6 +24,7 @@ func _ready() -> void:
 	player_socket.connect("broadcast_action", Callable(self, "attempt_broadcast_actions_to_remotes")
 , 0)
 	player_socket.connect("broadcast_movement", Callable(self, "attempt_broadcast_movements_to_remotes"))
+	player_socket.connect("broadcast_target", Callable(self, "attempt_broadcast_targets_to_remotes"))
 	pass # Replace with function body.
 
 
@@ -120,7 +121,14 @@ func attempt_broadcast_movements_to_remotes(p : PackedByteArray):
 	for c in multiplayer.get_peers():
 		# Do not broadcast a movement request to the client who performed the movement.
 		if c != message["PEER"]:
-			player_socket.rpc("client_movement", p)
+			player_socket.rpc_id(c, "client_movement", p)
+
+func attempt_broadcast_targets_to_remotes(p : PackedByteArray):
+	var message = bytes_to_var(p)
+	player_socket.client_target(p)
+	for c in multiplayer.get_peers():
+		if c != message["PEER"]:
+			player_socket.rpc_id(c, "client_target", p)
 
 @rpc("reliable", "authority")
 func high_latency_removal(peer_id):
