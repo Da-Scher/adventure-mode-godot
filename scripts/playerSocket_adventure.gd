@@ -110,9 +110,15 @@ func create_action_pack(action: String):
 		var packet = var_to_bytes(action_data)
 		send_action_packet_to_server(packet)
 
-func create_movement_pack(desired_movement : Vector3):
+func create_movement_pack(desired_movement : Vector3, target : CharacterBody3D = null):
+	# TODO: get the calculation for desired_turn from the _get_inputs function.
+	var calculate_turn_transform = null
+	if target != null:
+		calculate_turn_transform = Vector2(( thrall.global_basis.inverse() * (thrall.global_position - locked_target.global_position).normalized()).x,-( thrall.global_basis.inverse() * -desired_movement).z)
+	else:
+		calculate_turn_transform = Vector2(( thrall.global_basis.inverse() * -desired_movement).x,-( thrall.global_basis.inverse() * -desired_movement).z)
 	var id = multiplayer.get_unique_id()
-	var movement_data = {"PEER": id, "MOVEMENT": desired_movement}
+	var movement_data = {"PEER": id, "MOVEMENT": desired_movement, "ROTATE": calculate_turn_transform}
 	var packet = var_to_bytes(movement_data)
 	if multiplayer.is_server():
 		broadcast_movement.emit(packet)
@@ -145,6 +151,7 @@ func client_movement(p : PackedByteArray):
 	for peer in peer_nodes:
 		if str(message['PEER']) == peer.name:
 			peer.handle_movement(message['MOVEMENT'])
+			peer.desired_turn = message['ROTATE'].x
 
 @rpc("unreliable", "any_peer")
 func recieve_action_message(packet: PackedByteArray):
@@ -187,6 +194,8 @@ func _collect_inputs(delta):
 	mv_x = mv_x.normalized()
 	mv_x = mv_x * input_dir.x
 	var go_dir : Vector3 = (mv_x + mv_z)
+	
+	print("input_dir = " + str(input_dir))
 	
 	go_dir.y = Input.get_axis(player_prefix + "crouch", player_prefix + "jump")
 	
