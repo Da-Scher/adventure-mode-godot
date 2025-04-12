@@ -141,7 +141,7 @@ func client_movement(p : PackedByteArray):
 	var message : Dictionary = bytes_to_var(p)
 	var mm = get_parent().get_parent().get_node("Multplayer Manager")
 	var peer_nodes = mm.get_children()
-	PeerGlobal.log_message("message: " + str(message))
+	#PeerGlobal.log_message("message: " + str(message))
 	for peer in peer_nodes:
 		if str(message['PEER']) == peer.name:
 			peer.handle_movement(message['MOVEMENT'])

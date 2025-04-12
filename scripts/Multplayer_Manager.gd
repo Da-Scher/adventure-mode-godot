@@ -101,13 +101,19 @@ func add_player(peer_id):
 # Packets that account for the time it took to reach the server.
 @rpc("unreliable", "any_peer")
 func attempt_broadcast_actions_to_remotes(packet: PackedByteArray):
-	PeerGlobal.log_message("attempt_broadcast_actions_to_remotes(packet : PackedByteArray) ") 
+	PeerGlobal.log_message("attempt_broadcast_actions_to_remotes(packet : PackedByteArray) message = " + str(bytes_to_var(packet))) 
+	var message = bytes_to_var(packet)
 	#print("packet PackedByteArray: " + str(packet))
-	player_socket.rpc("client_action", packet)
+	# force send a client_action to server-client
+	player_socket.client_action(packet)
+	for c in multiplayer.get_peers():
+		if c != message["PEER"]:
+			PeerGlobal.log_message("sending message to peer " + str(c)) 
+			player_socket.rpc_id(c, "client_action", packet)
 
 @rpc("unreliable", "any_peer")
 func attempt_broadcast_movements_to_remotes(p : PackedByteArray):
-	PeerGlobal.log_message("attempt_broadcast_movements_to_remotes(p : PackedByteArray) ")
+	#PeerGlobal.log_message("attempt_broadcast_movements_to_remotes(p : PackedByteArray) ")
 	player_socket.rpc("client_movement", p)
 
 @rpc("reliable", "authority")
