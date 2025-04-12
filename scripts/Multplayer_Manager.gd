@@ -107,6 +107,7 @@ func attempt_broadcast_actions_to_remotes(packet: PackedByteArray):
 	# force send a client_action to server-client
 	player_socket.client_action(packet)
 	for c in multiplayer.get_peers():
+		# Do not broadcast an action request to the client who performed the action.
 		if c != message["PEER"]:
 			PeerGlobal.log_message("sending message to peer " + str(c)) 
 			player_socket.rpc_id(c, "client_action", packet)
@@ -114,7 +115,12 @@ func attempt_broadcast_actions_to_remotes(packet: PackedByteArray):
 @rpc("unreliable", "any_peer")
 func attempt_broadcast_movements_to_remotes(p : PackedByteArray):
 	#PeerGlobal.log_message("attempt_broadcast_movements_to_remotes(p : PackedByteArray) ")
-	player_socket.rpc("client_movement", p)
+	var message = bytes_to_var(p)
+	player_socket.client_movement(p)
+	for c in multiplayer.get_peers():
+		# Do not broadcast a movement request to the client who performed the movement.
+		if c != message["PEER"]:
+			player_socket.rpc("client_movement", p)
 
 @rpc("reliable", "authority")
 func high_latency_removal(peer_id):
