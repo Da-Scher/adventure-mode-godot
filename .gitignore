@@ -18,3 +18,4 @@ addons/*
 .vscode
 .addons/*
 *.import
+*.uid
