@@ -115,7 +115,7 @@ func create_action_pack(action: String):
 func create_movement_pack(desired_movement : Vector3, target : CharacterBody3D = null):
 	# TODO: get the calculation for desired_turn from the _get_inputs function.
 	var calculate_turn_transform = null
-	if target != null:
+	if thrall.lock_targ != null:
 		calculate_turn_transform = Vector2(( thrall.global_basis.inverse() * (thrall.global_position - thrall.lock_targ.global_position).normalized()).x,-( thrall.global_basis.inverse() * -desired_movement).z)
 	else:
 		calculate_turn_transform = Vector2(( thrall.global_basis.inverse() * -desired_movement).x,-( thrall.global_basis.inverse() * -desired_movement).z)
