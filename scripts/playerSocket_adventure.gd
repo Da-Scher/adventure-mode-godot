@@ -128,6 +128,8 @@ func create_movement_pack(desired_movement : Vector3, target : CharacterBody3D =
 		rpc_id(1, "recieve_movement_packet", packet)
 
 func create_lock_pack(entity : StringName):
+	if entity.is_empty():
+		return
 	var id = multiplayer.get_unique_id()
 	var target_data = {"PEER": id, "TARGET": entity}
 	var packet = var_to_bytes(target_data)
