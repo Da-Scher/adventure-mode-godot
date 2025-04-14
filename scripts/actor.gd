@@ -5,10 +5,14 @@ class_name Actor
 @export var character : Character
 var hasHealed = false
 var hasCalled = false
+var hasGrown = false
+var hasPower = false
 var desired_move = Vector3.ZERO
 var desired_turn = 0.0 # left or right -+ 
 var lock_targ_pos : Vector3 = Vector3.ZERO
 var lock_targ : CharacterBody3D = null
+var movement_target: Vector3 = Vector3.ZERO
+var is_moving_to_help: bool = false
 # NOTE - Desired move used to handle everything. But locking on and strafing 
 # 		 involved having the directing you were looking, IE turned towards
 #		 and the direction of movement, be separate. 
@@ -158,6 +162,14 @@ func _physics_process(_delta):
 	apply_animation_params()	
 	_TEMPORARY_fall_death()
 	return
+	# Handle the movement for the callForHelp() function
+	if is_moving_to_help:
+		# Set direction and use handle_movement
+		var direction = (movement_target - global_position).normalized()
+		handle_movement(direction)
+		# Turn off moving_to_help if within fighting distance
+		if global_position.distance_to(movement_target) < 3:
+			is_moving_to_help = false	
 
 
 
