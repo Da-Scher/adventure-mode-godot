@@ -51,13 +51,42 @@ func move_fix():
 func _process(delta):
 	#patrol(delta)
 	#return
-	# Testing for summonHelp()
+	# Handle logic for calling for help overriding the patrolling mechanic
+	if thrall.is_moving_to_help:
+		var direction = (thrall.movement_target - thrall.global_position)
+		var distance = direction.length()
+		# If thrall within fighting distance, make it attack
+		if distance < 3:
+			thrall.is_moving_to_help = false
+			thrall.combat_mode = true
+			state = ATT_STATE.ATTACKING
+		else:
+			var normalizedDirection = direction.normalized()
+			# Make the thrall face the character
+			var transformedDirection = Vector2(
+				(thrall.global_basis.inverse() * -normalizedDirection).x,
+				-(thrall.global_basis.inverse() * -normalizedDirection).z
+			)
+			thrall.desired_turn = transformedDirection.x
+			# Move toward the target
+			thrall.handle_movement(normalizedDirection)
+		return
+	# Testing for callForHelp()
 	if thrall.name == "skele_01" and thrall.character.health_current < 2 and thrall.hasCalled != true:
-		summonHelp()
+		callForHelp()
 		thrall.hasCalled = true
 	# Testing for heal()
 	if thrall.name == "skele_04" and thrall.character.health_current < 2:
 		heal(thrall, 5)
+	# Testing applied to skele_02 for growCharacter() and increasePower()
+	if thrall.name == "skele_02" and thrall.character.health_current < 2:
+		if thrall.hasGrown == false:
+			growCharacter()
+			thrall.hasGrown = true
+		if thrall.hasPower == false:
+			increasePower()
+			thrall.hasPower = true
+		
 	# Testing for flee()
 	#if thrall.name == "skele_02" and thrall.character.health_current < 2:
 		#state = ATT_STATE.FLEEING
@@ -108,7 +137,6 @@ func _process(delta):
 		var transformed_move_dir =  Vector2(( thrall.global_basis.inverse() * -go_d).x,-( thrall.global_basis.inverse() * -go_d).z)
 		thrall.desired_turn = transformed_move_dir.x
 
-		
 	var go_dir = goTo - thrall.global_position
 	thrall.handle_movement(go_dir)
 
@@ -122,7 +150,7 @@ func flee():
 	thrall.handle_movement(velocity)
 	goTo = find_somewhere_to_go()
 	return
-	
+
 # Feature to allow enemies to heal, could use an animation or effect to visualize it
 func heal(thrall, healAmount):
 	if thrall.hasHealed == false:
@@ -136,41 +164,51 @@ func playerAttacking(action : String):
 	player_attacking = true
 	await get_tree().create_timer(0.5).timeout
 	player_attacking = false
-	
 
-# Function to allow enemies to summon help when they
-# reach below a certain threshold
-func summonHelp():
-	# White-box Unit Test 
-	# Tests to determine which enemies to are valid to summon 
-	# and which are invalid. Also checks the bounds of specified summon distance
-	# to make sure they are within valid parameters. Test is implemented within the summonHelp function.
+func growCharacter():
+	# Adjustable scale amount to grow the character by
+	var growAmount = 0.7
+	# Apply scale growth to each axis
+	thrall.scale.x += growAmount
+	thrall.scale.y += growAmount
+	thrall.scale.z += growAmount
+	print(thrall,name, " has grew in size by ", growAmount, ".")
+
+func increasePower():
+	# Adjustable strength to increase
+	var strengthAmount = 5
+	# Apply strength to the character
+	thrall.character.strength += strengthAmount
+	print(thrall.name, " has increased its power by ", strengthAmount, ".")
+	
+# Function to allow enemies to call for help when they
+# reach a certain threshold
+func callForHelp():
 	var nearbyEnemies = get_tree().get_nodes_in_group("enemies")
 	assert(nearbyEnemies != null)
-	# Assignable variable to adjust radius
-	var summonDistance = 50
+	# Adjustable call distance to specify how far to call for help
+	var callDistance = 50
 	for enemy in nearbyEnemies:
 		assert(enemy != null)
+		# Skip the thrall and enemies that have already been called
 		if enemy is Actor and enemy != thrall and !enemy.hasCalled:
 			assert(enemy.global_position != null)
-			assert (thrall.global_position != null)
-			assert(enemy.global_position.distance_to(thrall.global_position) != null)
+			assert(thrall.global_position != null)
+			# Assign the distance of each enemy
 			var enemyDistance = enemy.global_position.distance_to(thrall.global_position)
 			assert(enemyDistance != null)
-			assert(summonDistance >= 0)
-			if enemyDistance > summonDistance:
-				print("Did not summon enemy ", enemy.name, ", their distance is ", enemyDistance, " while the summon distance is ", summonDistance, ".")
+			# If enemy is further away than the call distance, ignore it
+			if enemyDistance > callDistance:
+				print("Did not call enemy ", enemy.name, ", their distance is ", enemyDistance, " while the call distance is ", callDistance, ".")
 				continue
+			# Otherwise, set the enemy to move towards the enemy calling for help
 			else:
-				assert(enemyDistance <= summonDistance)
-				# Move the enemy towards the player
-				print("Summoned enemy ", enemy.name, ", their distance was ", enemyDistance, ".")
-				assert(enemy.global_position != null)
-				assert(player.global_position != null)
-				enemy.global_position = player.global_position
-				enemy.handle_movement((player.global_position - enemy.global_position).normalized())
+				print("Called enemy ", enemy.name, ", their distance was ", enemyDistance, ".")
+				# Set the movement target
+				enemy.movement_target = player.global_position
+				enemy.is_moving_to_help = true
 				enemy.combat_mode = true
-			return
+	return
 	
 # Patrol function that takes destination as input
 # Will walk to destination and return to starting position on loop

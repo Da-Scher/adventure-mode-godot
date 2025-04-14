@@ -1078,6 +1078,17 @@ script = ExtResource("27_6v26p")
 [node name="ai_attack" type="Node" parent="skele_05"]
 script = ExtResource("28_5kths")
 
+[node name="skele_06" parent="." instance=ExtResource("26_5srmb")]
+transform = Transform3D(0.169353, 0, -1.78197, 0, 1.79, 0, 1.78197, 0, 0.169353, 55.7394, 0.329161, 15.4347)
+character = ExtResource("34_b3pdd")
+to_equip_wep = ExtResource("28_6apcs")
+
+[node name="footall_sfx3" type="Node" parent="skele_06"]
+script = ExtResource("27_6v26p")
+
+[node name="ai_attack" type="Node" parent="skele_06"]
+script = ExtResource("28_5kths")
+
 [connection signal="body_entered" from="adventure_mode_demoLevel/Door of Trials/Area3D" to="adventure_mode_demoLevel/Door of Trials" method="trigger_animation"]
 [connection signal="body_entered" from="adventure_mode_demoLevel/Door of Trials2/Area3D" to="adventure_mode_demoLevel/Door of Trials2" method="trigger_animation"]
 [connection signal="body_exited" from="adventure_mode_demoLevel/Door of Trials3/Area3D" to="adventure_mode_demoLevel/Door of Trials3" method="trigger_animation"]
