@@ -1,12 +1,18 @@
-[gd_scene load_steps=5 format=3 uid="uid://cme484l06g14s"]
+[gd_scene load_steps=8 format=3 uid="uid://cme484l06g14s"]
 
 [ext_resource type="PackedScene" uid="uid://cn7wdk07ed863" path="res://art/meshes/tree.glb" id="1_4jcbf"]
 [ext_resource type="Script" path="res://scripts/tree.gd" id="2_rt06q"]
+[ext_resource type="Resource" uid="uid://crmpu2ncdckj" path="res://Resources/Inventory Items/basic_wood_log.tres" id="3_kr7nr"]
 [ext_resource type="Material" uid="uid://btyn0xde5r8mh" path="res://art/materials/bark.tres" id="3_qheo7"]
 [ext_resource type="Material" uid="uid://c1fi1h0g276op" path="res://art/materials/foliage_tree.tres" id="4_mwoia"]
+[ext_resource type="Script" path="res://prefabs/environment/collision_body.gd" id="5_3kmj4"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jdf8b"]
 
 [node name="tree_foliage" instance=ExtResource("1_4jcbf")]
 script = ExtResource("2_rt06q")
+wood_item = ExtResource("3_kr7nr")
+wood_quantity = 5
 
 [node name="tree_base" parent="." index="0"]
 surface_material_override/0 = ExtResource("3_qheo7")
@@ -18,3 +24,9 @@ surface_material_override/1 = ExtResource("4_mwoia")
 
 [node name="tree_top" parent="." index="2"]
 surface_material_override/0 = ExtResource("4_mwoia")
+
+[node name="CollisionBody" type="StaticBody3D" parent="." index="3"]
+script = ExtResource("5_3kmj4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CollisionBody" index="0"]
+shape = SubResource("CapsuleShape3D_jdf8b")

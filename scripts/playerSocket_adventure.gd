@@ -6,7 +6,7 @@ extends Node
 # Easily swap socket type, ex player switch to another character
 # or someone comes over the network and controlls something
 # Made by KaletheQuick
-
+@export var chop_distance: float = 5.0
 @export var thrall : CharacterBody3D # the thing to be controlled 
 @export var player_prefix = "p1_" # used for local multiplayer
 
@@ -20,7 +20,8 @@ var primary_thrall = true
 @export var vignette : Control
 @export var title_card : Control
 
-
+@export var inventory_scene: PackedScene 
+var inventory_ui: Control
 
 var dot : Node3D # debug
 
@@ -45,10 +46,17 @@ signal broadcast_movement(packet : PackedByteArray)
 
 signal broadcast_target(packet : PackedByteArray)
 
+
 # acreas and interactable things
 
 func _ready():
 	dobox(Vector3i(2,3,5))
+	
+	if inventory_scene:
+		inventory_ui = inventory_scene.instantiate()
+		inventory_ui.visible = false
+		get_tree().root.add_child.call_deferred(inventory_ui)
+
 	pass # Replace with function body.
 	
 	dot = target_locker.instantiate()
@@ -78,6 +86,8 @@ func _ready():
 @export var deb_action = ""
 @export var deb_act = false
 func _process(_delta):
+	if Input.is_action_just_pressed("toggle_inventory") and inventory_ui:
+		inventory_ui.visible = not inventory_ui.visible
 	if thrall == null:
 		return
 	if deb_act:
@@ -87,9 +97,48 @@ func _process(_delta):
 			#deb_action = ""
 	#print(delta)
 	find_interactable_objects()
-
+	
+	if Input.is_action_just_pressed("interact"):
+		print("E was pressed!")
+		try_chop()
+	
+	if Input.is_action_just_pressed("toggle_inventory"):
+		print("I was pressed!")
+		toggle_inventory()
 	# NOTE - Demo purposes only
 
+
+func toggle_inventory():
+	var inv_ui = get_node_or_null("res://scenes/UI_Inventory.tscn") 
+
+	if inv_ui:
+		inv_ui.visible = not inv_ui.visible
+
+func try_chop():
+	var space_state = thrall.get_world_3d().direct_space_state
+	var origin = thrall.global_position + Vector3.UP
+	var end = origin + (thrall.global_basis.z * chop_distance)
+	print("Casting ray from", origin, "to", end)
+
+	var query = PhysicsRayQueryParameters3D.create(origin, end)
+	query.collide_with_bodies = true
+	query.collide_with_areas = true
+
+	var result = space_state.intersect_ray(query)
+
+	if result:
+		print("Hit:", result.collider.name)
+		var target = result.collider
+		if target and target.has_method("chop_tree"):
+			print("Calling chop_tree() on", target.name)
+			target.chop_tree()
+		else:
+			print("Target has no chop_tree() method")
+	else:
+		print("Raycast hit nothing")
+
+
+		
 func _physics_process(delta: float) -> void:
 	if thrall == null:
 		return
