@@ -1,64 +1,44 @@
-extends Resource
-class_name Inventory
+extends Node
+class_name InventoryClass
 
-# Dictionary to store inventory items
-var inventory: Dictionary = {}
-
-# Signal for updating UI when inventory changes
 signal inventory_updated
 
-# Add an item to the inventory
-func add_item(item_name: String, quantity: int = 1):
-	if item_name in inventory:
-		inventory[item_name] += quantity
-	else:
-		inventory[item_name] = quantity
-	
-	inventory_updated.emit()  # Notify UI
-	print("Added: ", quantity, "x ", item_name)
+# Inventory stores InventoryItem resources as keys and their quantities as values
+var inventory: Array = []  # each item is {item: InventoryItem, quantity: int}
 
-# Remove an item
-func remove_item(item_name: String, quantity: int = 1):
-	if item_name in inventory:
-		inventory[item_name] -= quantity
-		if inventory[item_name] <= 0:
-			inventory.erase(item_name)
 
-	inventory_updated.emit()  # Notify UI
-	print("Removed: ", quantity, "x ", item_name)
+const MAX_STACKS = 25
 
-# Check if an item exists
-func has_item(item_name: String) -> bool:
-	return inventory.get(item_name, 0) > 0
+func add_item(item_resource: InventoryItem, quantity: int = 1):
+	var remaining = quantity
 
-# Get item quantity
-func get_quantity(item_name: String) -> int:
-	return inventory.get(item_name, 0)
+	# Step 1: Try to fill existing stacks
+	for stack in inventory:
+		if stack.item == item_resource and stack.quantity < item_resource.max_stack:
+			var space = item_resource.max_stack - stack.quantity
+			var to_add = min(space, remaining)
+			stack.quantity += to_add
+			remaining -= to_add
+			if remaining <= 0:
+				inventory_updated.emit()
+				return
 
-# Save inventory to file
-func save_inventory():
-	var file = FileAccess.open("user://inventory.save", FileAccess.WRITE)
-	file.store_var(inventory)
-	print("Inventory saved.")
+	# Step 2: Add new stacks if needed
+	while remaining > 0:
+		if inventory.size() >= MAX_STACKS:
+			print("Inventory full! Could not add all items.")
+			break
+		var to_add = min(item_resource.max_stack, remaining)
+		inventory.append({ "item": item_resource, "quantity": to_add })
+		remaining -= to_add
 
-# Load inventory from file
-func load_inventory():
-	if FileAccess.file_exists("user://inventory.save"):
-		var file = FileAccess.open("user://inventory.save", FileAccess.READ)
-		inventory = file.get_var()
-		inventory_updated.emit()
-		print("Inventory loaded.")
-
-## Clear the inventory
-func clear_inventory():
-	inventory.clear()
 	inventory_updated.emit()
 
-## Transfer an item to another inventory
-func transfer_item(item_name: String, quantity: int, target_inventory: Inventory):
-	if has_item(item_name) and get_quantity(item_name) >= quantity:
-		remove_item(item_name, quantity)
-		target_inventory.add_item(item_name, quantity)
-# Get all items in the inventory
-func get_items() -> Dictionary:
-	return inventory
+
+
+func remove_stack(stack_to_remove: Dictionary):
+	for i in inventory.size():
+		if inventory[i] == stack_to_remove:
+			inventory.remove_at(i)
+			inventory_updated.emit()
+			return
